@@ -20,7 +20,16 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 
 Vocabulary: **step** = one year. **Episode** = one term of office (~20 years). Outer loop = re-election; memory carries between terms.
 
-- 1.1.1 A small state: six or seven numbers with a plain meaning and a range
+- 1.1.1 A small state: seven numbers, agreed 2026-09-12
+  - [ ] population (people, 0+): up with jobs, housing, happiness; down with unemployment, pollution
+  - [ ] housing (units, 0+): built by mayor; caps population
+  - [ ] jobs (count, 0+): from factories/businesses; lost when they close
+  - [ ] treasury (money, may go negative with interest): tax in; building + services out; borrow adds cash + future interest
+  - [ ] pollution (0-100): up with factories; down with parks, transit; hurts happiness, drives people out
+  - [ ] happiness (0-100): employment rate, housing ratio, pollution, tax rate, services; below floor 3 yrs = revolt
+  - [ ] services (0-100): funded by mayor; decays yearly unfunded; feeds happiness
+  - Derived, never stored: unemployment, housing ratio, economy tier (renderer)
+  - Assumed: treasury may go negative (needed for the borrow lever and a bankruptcy floor); seven kept rather than six
 - 1.1.2 Two kinds of actions: world levers (identical for all mayors) and loop actions (deterministic results computed by the world; availability differs per mayor)
 - 1.1.3 One pure step function: state, actions, seed in; next state out (referendum results and forecasts included)
 - 1.1.4 Consequences carry a cause and a delay (every change tagged with action+year; slow effects in a pending queue)
