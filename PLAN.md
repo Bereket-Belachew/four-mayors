@@ -20,7 +20,9 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 
 ### 3. Build a project that uses the sponsor platforms
 
-<!-- Level 1 agreed 2026-09-12 ~10:00. Next level proposed, not yet agreed. -->
+### 4. It gets submitted and demoed on time
+
+<!-- Level 1 (four nodes) agreed 2026-09-12 ~10:10. Next level proposed, not yet agreed. -->
 
 - TBD: tickets live in PLAN.md + git for now; Linear workspace choice pending (only team is Fana AI).
 
