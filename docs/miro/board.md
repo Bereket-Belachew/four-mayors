@@ -10,3 +10,5 @@ Layout: root at (650,-200) 500x100; level-1 row y=40, boxes 380x90 at x=-100,380
 Next level: y=220, boxes 300x80.
 Level 2 under n1 (y=240, 300x90, fill #eef2ff): n11 3458764683525907131 (x=-1000) · n12 ...132 (x=-660) · n13 ...133 (x=-320) · n14 ...134 (x=20); connectors ...137-140.
 Planned: n2 children at x=380..1340 region y=240; n3 children y=240 further right; shift as needed.
+Level 2 under n2 (y=240, 300x90, fill #f0fdf4): n21 3458764683526007096 (x=400) · n22 ...097 (x=740) · n23 ...098 (x=1080) · n24 ...099 (x=1420) · n25 ...100 (x=1760); connectors ...103,105-108.
+Note: n3 (x=860) and n4 (x=1340) must move right before their children are drawn: n3 -> x=2300, n4 -> x=3300.
