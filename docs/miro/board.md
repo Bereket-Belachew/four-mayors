@@ -17,3 +17,5 @@ Level 2 under n3 (y=240, 300x90, fill #fef3c7): n31 3458764683526126902 (x=2140,
 Planned n4 children: y=240, x=3900.. onward (4 boxes fit 3900..5220).
 Level 2 under n4 (y=240, 300x90, fill #fce7f3): n41 3458764683526205392 (x=3880) · n42 ...393 (x=4220) · n43 ...394 (x=4560) · n44 ...395 (x=4900); connectors ...397-400.
 Level 2 complete. Level 3 rows start at y=440 (boxes 260x90), under the parent's x.
+Level 3 under n11: vertical stack x=-960, 300x70, y=440,540,...,940: n111 3458764683526753405 · n112 ...406 · n113 ...407 · n114 ...408 · n115 ...409 · n116 ...410; connectors ...413-418. Vocab sticky ...411 at (-1400,440).
+n33 text updated (models decided). Level 4 under n111 goes to the right of the stack: x=-620, y=440.., 260x60.
