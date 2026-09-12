@@ -108,6 +108,24 @@ class City extends Phaser.Scene {
     this.scale.on("resize", g => this.cameras.main.setSize(g.width, g.height));
   }
   toScreen(r, c) { return { x: (c - r) * TW / 2, y: (r + c) * TH / 2 }; }
+  showChatButton(x, y, label, depth) {
+    clearTimeout(this._hideT);
+    if (!this.chatBtn) {
+      const g = this.add.container(0, 0).setDepth(99999);
+      const bg = this.add.rectangle(0, 0, 150, 34, 0x111318, 0.92).setStrokeStyle(1, 0x2563eb).setOrigin(0.5, 1);
+      const t = this.add.text(0, -17, "💬 talk", { fontSize: "15px", color: "#e8e8ea" }).setOrigin(0.5, 0.5);
+      const sub = this.add.text(0, 6, "", { fontSize: "11px", color: "#9aa0aa" }).setOrigin(0.5, 0);
+      g.add([bg, t, sub]); g.bg = bg; g.sub = sub;
+      bg.setInteractive({ useHandCursor: true });
+      bg.on("pointerover", () => clearTimeout(this._hideT));
+      bg.on("pointerout", () => this.hideChatButtonSoon());
+      bg.on("pointerdown", () => { this._clickedSprite = true; stop(); if (window.chroniclerOpen && ep) window.chroniclerOpen(ep, Math.max(1, year)); this.chatBtn.setVisible(false); setTimeout(() => this._clickedSprite = false, 50); });
+      this.chatBtn = g;
+    }
+    this.chatBtn.setPosition(x, y).setVisible(true); this.chatBtn.sub.setText(label);
+    this.chatBtn.setScale(0.9); this.tweens.add({ targets: this.chatBtn, scale: 1, duration: 120 });
+  }
+  hideChatButtonSoon() { clearTimeout(this._hideT); this._hideT = setTimeout(() => this.chatBtn && this.chatBtn.setVisible(false), 350); }
   addImg(key, r, c, dy = 0, scale = 1, depthBias = 0) {
     const { x, y } = this.toScreen(r, c);
     const img = this.add.image(x, y + TH / 2 + dy, key).setOrigin(0.5, 1).setScale(scale);
@@ -149,9 +167,12 @@ class City extends Phaser.Scene {
       objs.push(this.addImg(pick(SPR.civic, i, salt), r, c, 0, 1, 1));
     }
     if (kind !== "road" && kind !== "empty" && kind !== "park") {
-      // click a building -> freeze & ask for this city
-      const top = objs[0]; top.setInteractive({ useHandCursor: true });
-      top.on("pointerdown", () => { this._clickedSprite = true; stop(); if (window.chroniclerOpen && ep) window.chroniclerOpen(ep, Math.max(1, year)); setTimeout(() => this._clickedSprite = false, 50); });
+      // hover a building -> a small chat button appears above it; click the button -> freeze & ask
+      const top = objs[0]; top.setInteractive({ useHandCursor: false });
+      const { x, y } = this.toScreen(r, c);
+      const label = { house: "a family lives here", shack: "poor housing", shuttered: "shuttered", tower: "apartments", factory: "factory", civic: "city services" }[kind] || kind;
+      top.on("pointerover", () => this.showChatButton(x, y - (kind === "tower" ? 150 : 90), label, (r + c) * 10 + 50));
+      top.on("pointerout", () => this.hideChatButtonSoon());
     }
     if (changed) { // highlight what changed this year
       const { x, y } = this.toScreen(r, c);
