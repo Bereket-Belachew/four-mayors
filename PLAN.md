@@ -10,6 +10,19 @@ Everything below exists to make this line true. -->
 
 **Thesis (one sentence for a judge):** Same city, same model, same seed. Four mayors that differ only in how they close the loop. Watch which city grows.
 
+## Decisions log — afternoon (2026-09-12, 14:30–16:10, with Bereket)
+- World numbers all live in `sim/params.py`; plain-language rules in `docs/WORLD-RULES.md` (his review doc).
+- Hard starts per seed (unemployment / smog / debt / housing shortage). Seeds now mean something.
+- Land is finite (81 lots), parks absorb a share (no zero pollution), consultants forecast by simulation.
+- **The city persists across terms** (his call: "the go-to move"). Fiscal scores net worth.
+- Lessons redesigned: conditional + predictive, reviewed against the trajectory; 3 self-catches observed.
+- Freeze-and-ask (yes): worker / mayor / industrialist / shopkeeper answer in character via local ask_server.py.
+- Narrator (chronicler) pauses at moments; template text from events.
+- Public repo: https://github.com/Bereket-Belachew/four-mayors (his yes). Weave project live: https://wandb.ai/betab-belachew1-fana-ai/coreweave-hacks/weave
+- TypeSafe: Caesar-only benchmark run, once the API shape is known (docs not public; ask Bereket / Discord).
+- Balance call made alone, flagged in WORLD-RULES: wage 3.0→3.5, services 200→150.
+- Open: taxes and mood (he asked); TypeSafe endpoint; isometric renderer switch (not started, waiting for him).
+
 ## Decisions log (2026-09-12, ~13:30, after strategist run 1)
 - 2.5 human mayor: DEFERRED to Sun 10:30, only if ahead. No leaderboard, no server. "Play it yourself" mode on the replay page if at all.
 - 2.4 embodied world: SHRUNK to a sprite swap from the derived economy tier (cars/horses, shops open/shuttered, sky tint). Click-to-talk NPCs CUT.
@@ -135,7 +148,7 @@ exception is W&B / Weave: it gives the robot dog and is never ruled out.
 - [ ] 4.1.1 sim deterministic + asserted; Caesar + Reformer end-to-end on seed 0, Weave-traced; rubric scores both; one run JSON on disk; grid replay in browser (or GIF); repo public; README stub.
 - [ ] 4.1.2 Divergence test result written to docs/strategy/ (1.4.5).
 #### 4.2 Submission
-- [ ] 4.2.1 TODAY: AGI House platform sign-in verified; W&B account + Weave project created; API keys in `.env` (gitignored); repo public.
+- [x] 4.2.1 (partial) W&B account + Weave project created; all API keys in `.env`; repo public. AGI House sign-in + survey: Bereket, unverified.
 - [ ] 4.2.2 Sun 12:30 hard stop: submit whatever exists; edit after.
 #### 4.3 Demo
 - [ ] 4.3.1 `docs/DEMO.md`: 3-minute script; beats: thesis (15s) -> four cities diverge (45s) -> Caesar repeats the mistake (30s) -> Reformer self-catch with Weave trace (45s) -> numbers with spread (30s) -> what we'd do next (15s). Run twice; commands pasted with real output.
