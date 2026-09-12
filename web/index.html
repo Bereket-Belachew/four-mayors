@@ -54,6 +54,7 @@
   <label>term <select id="term"></select></label>
   <button id="play" class="primary">▶ play</button>
   <button id="step">step</button>
+  <button id="freeze" title="stop the clock and ask someone in the city">❄ freeze &amp; ask</button>
   <label>speed <input id="speed" type="range" min="1" max="10" value="4" /></label>
   <input id="scrub" type="range" min="0" max="20" value="0" style="flex:1; min-width:160px" />
   <span id="year">year 0 / 20</span>
@@ -68,7 +69,7 @@ let episodes = [];   // all lines from runs.jsonl
 let view = [];       // episodes for the selected (seed, term), one per mayor
 let year = 0, playing = false, timer = null;
 const ORDER = ["caesar", "bureaucrat", "reformer", "populist", "reformer_shuffled"];
-const NAMES = { caesar: "Caesar", bureaucrat: "The Bureaucrat", reformer: "The Reformer", populist: "The Populist", reformer_shuffled: "Reformer (shuffled control)" };
+const NAMES = window.MAYOR_NAMES = { caesar: "Caesar", bureaucrat: "The Bureaucrat", reformer: "The Reformer", populist: "The Populist", reformer_shuffled: "Reformer (shuffled control)" };
 
 async function loadDefault() {
   try { const r = await fetch("../runs/runs.jsonl"); if (r.ok) parse(await r.text()); } catch (e) {}
@@ -160,6 +161,9 @@ function build() {
       <div class="lessons"></div>`;
     main.appendChild(el);
     el._prevKinds = null;
+    el.querySelector("h2").style.cursor = "pointer";
+    el.querySelector("h2").title = "freeze and ask someone in this city";
+    el.querySelector("h2").addEventListener("click", () => { stop(); if (window.chroniclerOpen) window.chroniclerOpen(ep, Math.max(1, year)); });
     el.querySelector("canvas").addEventListener("mousemove", e => hover(e, el, ep));
     el.querySelector("canvas").addEventListener("mouseleave", () => document.getElementById("tip").style.display = "none");
   }
@@ -239,6 +243,7 @@ function tick() {
   const maxY = +document.getElementById("scrub").max;
   if (year >= maxY) { stop(); return; }
   year++; render();
+  if (window.chroniclerCheck && window.chroniclerCheck(view, year)) { const wasPlaying = playing; stop(); window.__resumePlay = () => { if (wasPlaying) play(); }; }
 }
 function play() { if (playing) return stop(); playing = true; document.getElementById("play").textContent = "❚❚ pause"; schedule(); }
 function schedule() { const spd = +document.getElementById("speed").value; timer = setTimeout(() => { tick(); if (playing) schedule(); }, 10000 / spd); }
@@ -246,6 +251,7 @@ function stop() { playing = false; clearTimeout(timer); document.getElementById(
 
 document.getElementById("play").onclick = play;
 document.getElementById("step").onclick = () => { stop(); tick(); };
+document.getElementById("freeze").onclick = () => { stop(); if (view[0] && window.chroniclerOpen) window.chroniclerOpen(view[0], Math.max(1, year)); };
 document.getElementById("scrub").oninput = e => { stop(); year = +e.target.value; for (const el of document.querySelectorAll(".city")) el._prevKinds = null; render(); };
 document.getElementById("seed").onchange = select;
 document.getElementById("term").onchange = select;
@@ -253,5 +259,6 @@ document.getElementById("file").onchange = async e => { const f = e.target.files
 window.addEventListener("resize", render);
 loadDefault();
 </script>
+<script src="narrator.js"></script>
 </body>
 </html>
