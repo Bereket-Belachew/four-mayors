@@ -1,0 +1,9 @@
+[project]
+name = "mayors"
+version = "0.1.0"
+description = "Same city, same model, same seed. Four mayors that differ only in how they close the loop."
+requires-python = ">=3.10"
+dependencies = ["weave", "openai", "anthropic", "pydantic>=2", "pyyaml", "python-dotenv", "marimo", "pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

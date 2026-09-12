@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/*.json
+runs/*.jsonl
+runs/controls/*
+!runs/.gitkeep
+!runs/controls/.gitkeep
+.venv/
+wandb/
