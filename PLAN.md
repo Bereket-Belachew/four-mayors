@@ -31,6 +31,16 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 
 ### 3. Build a project that uses the sponsor platforms
 
+**Rule (his words, 2026-09-12):** a sponsor is used only where it does not compromise
+the build. If a platform makes the project harder and worse, drop it. The one
+exception is W&B / Weave: it gives the robot dog and is never ruled out.
+
+#### 3.1 Weave traces the loop itself (terms, memory reads/writes, judge scores; rubric as a Weave Evaluation) — NON-NEGOTIABLE
+#### 3.2 A marimo notebook compares the loops across seeds (runnable in molab) — optional
+#### 3.3 Mayors run on sponsor models (W&B Inference; TypeSafe only if it fits) — optional
+#### 3.4 ARIA is used to build, or we say no — decide at kickoff
+#### 3.5 Every use is visible in the README (one screenshot, one sentence each)
+
 ### 4. It gets submitted and demoed on time
 
 <!-- Level 1 (four nodes) agreed 2026-09-12 ~10:10. Next level proposed, not yet agreed. -->
