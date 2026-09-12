@@ -16,6 +16,11 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 
 ### 1. Build a project that is technically impressive
 
+#### 1.1 A deterministic city world (seeded, pure function, reproducible)
+#### 1.2 Mayors that differ only in how they close the loop (same model, same seed; human is the fifth)
+#### 1.3 A hidden rubric and a judge that never leaks into the mayors
+#### 1.4 Proof it improves (several runs per mayor, variance shown, one visible self-catch)
+
 ### 2. Build a project that is visually appealing even for a non-technical audience
 
 ### 3. Build a project that uses the sponsor platforms
