@@ -23,6 +23,12 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 
 ### 2. Build a project that is visually appealing even for a non-technical audience
 
+#### 2.1 A city you can watch change (tile grid; buildings rise and rot from state)
+#### 2.2 A decision is felt (two clocks: decide card, term animation, score tick; cause tags; visible lag)
+#### 2.3 Four cities side by side, scrubbable through time
+#### 2.4 The world embodies the economy (cars vs horses, shuttered shops, crowds, sky; click a building to talk)
+#### 2.5 Anyone in the room can play (human mayor, same hidden rubric, leaderboard)
+
 ### 3. Build a project that uses the sponsor platforms
 
 ### 4. It gets submitted and demoed on time
