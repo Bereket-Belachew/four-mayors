@@ -111,7 +111,7 @@ const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const orbit = new OrbitControls(camera, renderer.domElement);
 orbit.enableDamping = true; orbit.maxPolarAngle = Math.PI / 2 - 0.05; orbit.minDistance = 3; orbit.maxDistance = 60;
 const CENTER = new THREE.Vector3(N / 2 - 0.5, 0, N / 2 - 0.5);
-camera.position.set(CENTER.x + 13, 12, CENTER.z + 13); orbit.target.copy(CENTER);
+camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x556677, 0.9); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff3e0, 1.6); sun.position.set(20, 30, 10); sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -14; sun.shadow.camera.right = 14; sun.shadow.camera.top = 14; sun.shadow.camera.bottom = -14; sun.shadow.camera.far = 80; scene.add(sun);
@@ -158,12 +158,12 @@ async function rebuild(full = false) {
       if (kind === "road") { const [url, rot] = roadFor(kinds, r, c); obj = await place(url, x, z, { fit: 1.0, rotY: rot }); }
       else if (kind === "empty") { obj = tile(hash(i, 3) % 3 ? grassMat : dirtMat); }
       else if (kind === "park") { obj = new THREE.Group(); obj.add(tile(grassMat)); for (let k = 0; k < 3; k++) { const t = await place(pick(MODELS.tree, i, k), x + ((hash(i, k) % 60) - 30) / 100, z + ((hash(i, k + 9) % 60) - 30) / 100, { fit: 0.35 + (hash(i, k + 3) % 20) / 100 }); obj.add(t); } label = "park"; }
-      else if (kind === "house") { obj = new THREE.Group(); obj.add(tile(grassMat)); obj.add(await place(pick(MODELS.house, i, 7), x, z, { fit: 0.8, rotY: (hash(i, 1) % 4) * Math.PI / 2 })); label = "a family lives here"; }
+      else if (kind === "house") { obj = new THREE.Group(); obj.add(tile(grassMat)); obj.add(await place(pick(MODELS.house, i, 7), x, z, { fit: 0.9, rotY: (hash(i, 1) % 4) * Math.PI / 2 })); label = "a family lives here"; }
       else if (kind === "shack") { obj = new THREE.Group(); obj.add(tile(dirtMat)); obj.add(await place(pick(MODELS.shuttered, i, 7), x, z, { fit: 0.7, maxH: 0.9 })); label = "poor housing"; }
       else if (kind === "shuttered") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.shuttered, i, 8), x, z, { fit: 0.85, maxH: 1.2 })); label = "shuttered"; }
       else if (kind === "tower") { obj = new THREE.Group(); obj.add(tile(lotMat)); const dense = Math.min(1, population / 2500); const h = 1.6 + dense * 3.5 + (hash(i, 5) % 100) / 100 * 1.5; obj.add(await place(pick(MODELS.tower, i, 7), x, z, { fit: 0.85, maxH: h })); label = "apartments"; }
-      else if (kind === "factory") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.factory, i, 7), x, z, { fit: 0.9, maxH: 1.6 })); const ch = await place(pick(MODELS.chimney, i, 2), x + 0.3, z - 0.3, { fit: 0.18, maxH: 1.4 }); obj.add(ch); label = "factory";
-        const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0.6, depthWrite: false })); puff.position.set(x + 0.3, 1.5, z - 0.3); puff.scale.setScalar(0.5); puff.userData = { t: hash(i, 4) % 1000 / 1000, x: x + 0.3, z: z - 0.3 }; smokeGroup.add(puff); }
+      else if (kind === "factory") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.factory, i, 7), x, z, { fit: 0.95, maxH: 1.8 })); const ch = await place(pick(MODELS.chimney, i, 2), x + 0.3, z - 0.3, { fit: 0.18, maxH: 1.4 }); obj.add(ch); label = "factory";
+        const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0.6, depthWrite: false })); puff.position.set(x + 0.3, 1.5, z - 0.3); puff.scale.setScalar(0.15); puff.userData = { t: hash(i, 4) % 1000 / 1000, x: x + 0.3, z: z - 0.3 }; smokeGroup.add(puff); }
       else if (kind === "civic") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.civic, i, 7), x, z, { fit: 0.9, maxH: 1.8 })); label = "city services"; }
       if (token !== buildToken || !obj) return;
       obj.userData.lot = { r, c, kind, label };
@@ -179,7 +179,7 @@ async function rebuild(full = false) {
     if (hash(i, 11) % every !== 0) continue;
     const alongZ = r % 4 !== 3; // roads at r%4==3 run along X; columns c%4==3 run along Z
     tasks.push((async () => {
-      const car = await place(pick(MODELS.car, i, 12), c, r, { fit: 0.42, rotY: alongZ ? 0 : Math.PI / 2 });
+      const car = await place(pick(MODELS.car, i, 12), c, r, { fit: 0.26, rotY: alongZ ? 0 : Math.PI / 2 });
       if (token !== buildToken) return;
       car.userData.drive = { alongZ, speed: 0.4 + (hash(i, 13) % 50) / 100, lane: alongZ ? 0.2 : -0.2, dir: hash(i, 14) % 2 ? 1 : -1 };
       if (alongZ) car.position.x += 0.22; else car.position.z += 0.22;
@@ -210,8 +210,8 @@ renderer.domElement.addEventListener("pointermove", e => { if (mode === "street"
 function setMode(m) {
   mode = m; $("camOrbit").classList.toggle("sel", m === "orbit"); $("camStreet").classList.toggle("sel", m === "street");
   orbit.enabled = m === "orbit";
-  if (m === "street") { streetPos.set(3, 0.5, 3.2); yaw = Math.PI * 0.25; pitch = -0.05; }
-  else { camera.position.set(CENTER.x + 13, 12, CENTER.z + 13); orbit.target.copy(CENTER); }
+  if (m === "street") { streetPos.set(3, 0.45, -0.8); yaw = 0; pitch = -0.02; }
+  else { camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER); }
 }
 $("camOrbit").onclick = () => setMode("orbit"); $("camStreet").onclick = () => setMode("street");
 
@@ -248,7 +248,7 @@ function animate() {
     camera.position.copy(streetPos); camera.lookAt(streetPos.x + Math.sin(yaw) * Math.cos(pitch), streetPos.y + Math.sin(pitch), streetPos.z + Math.cos(yaw) * Math.cos(pitch));
   }
   for (const car of carGroup.children) { const d = car.userData.drive; if (!d) continue; if (d.alongZ) { car.position.z += d.dir * d.speed * dt; if (car.position.z > N + 0.5) car.position.z = -1.5; if (car.position.z < -1.5) car.position.z = N + 0.5; } else { car.position.x += d.dir * d.speed * dt; if (car.position.x > N + 0.5) car.position.x = -1.5; if (car.position.x < -1.5) car.position.x = N + 0.5; } }
-  for (const p of smokeGroup.children) { p.userData.t += dt * 0.35; if (p.userData.t > 1) p.userData.t = 0; const t = p.userData.t; p.position.set(p.userData.x + t * 0.4, 1.4 + t * 1.6, p.userData.z); p.scale.setScalar(0.4 + t * 1.2); p.material.opacity = 0.65 * (1 - t); }
+  for (const p of smokeGroup.children) { p.userData.t += dt * 0.35; if (p.userData.t > 1) p.userData.t = 0; const t = p.userData.t; p.position.set(p.userData.x + t * 0.35, 1.35 + t * 0.9, p.userData.z + t * 0.1); p.scale.setScalar(0.12 + t * 0.35); p.material.opacity = 0.5 * (1 - t); }
   for (const o of cityGroup.children) if (o.userData.fade !== undefined) { o.userData.fade -= dt * 0.6; o.material.opacity = Math.max(0, o.userData.fade); if (o.userData.fade <= 0) { cityGroup.remove(o); } }
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
