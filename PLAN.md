@@ -83,33 +83,33 @@ Inner loop (within a term) is IDENTICAL for all mayors: each year sees state + t
 - 1.2.5 The human mayor: same levers, same world, own pace, scored identically, no memory machinery
 - TBD: divergence is empirical. First Saturday test: 3 terms each on one seed. If Bureaucrat and Reformer converge, dials are log size, consultant count, consultant bias. (Leaf under 4.1.)
 #### 1.3 A hidden rubric and a judge that never leaks into the mayors
-- [ ] 1.3.1 `rubric.md`: 6 criteria, each 0-10, scored on end state AND trajectory: prosperity (jobs/pop), housing adequacy, fiscal health (treasury trend, debt), environment (pollution trend), wellbeing (happiness mean + min), resilience (recovered from any dip / avoided early exit). Lives in `judge/`, never imported by `mayors/`.
-- [ ] 1.3.2 `judge.py`: Claude (Sonnet 5 default, Opus 5 flag) reads rubric + trajectory JSON, returns per-criterion scores + one-paragraph verdict as structured output. Runs once per episode.
-- [ ] 1.3.3 Leak guard: a test asserts no rubric text appears in any mayor prompt, and the mayor harness has no import path to `judge/`.
-- [ ] 1.3.4 Anti-vacuity: judge is fed (a) an empty trajectory and (b) a 20-year do-nothing run; both must score in the bottom band. Results saved to `runs/controls/`.
-- [ ] 1.3.5 Deterministic scoreboard beside the judge: the same 6 criteria computed by formula from state. Judge score is reported next to it, never summed into it. (Fana rule: a judged score never enters the reward path.)
+- [x] 1.3.1 `rubric.md`: 6 criteria, each 0-10, scored on end state AND trajectory: prosperity (jobs/pop), housing adequacy, fiscal health (treasury trend, debt), environment (pollution trend), wellbeing (happiness mean + min), resilience (recovered from any dip / avoided early exit). Lives in `judge/`, never imported by `mayors/`.
+- [x] 1.3.2 `judge.py`: Claude (Sonnet 5 default, Opus 5 flag) reads rubric + trajectory JSON, returns per-criterion scores + one-paragraph verdict as structured output. Runs once per episode.
+- [x] 1.3.3 Leak guard: a test asserts no rubric text appears in any mayor prompt, and the mayor harness has no import path to `judge/`.
+- [x] 1.3.4 Anti-vacuity: judge is fed (a) an empty trajectory and (b) a 20-year do-nothing run; both must score in the bottom band. Results saved to `runs/controls/`.
+- [x] 1.3.5 Deterministic scoreboard beside the judge: the same 6 criteria computed by formula from state. Judge score is reported next to it, never summed into it. (Fana rule: a judged score never enters the reward path.)
 #### 1.4 Proof it improves (several runs per mayor, variance shown, one visible self-catch)
-- [ ] 1.4.1 Sweep runner: N seeds x 4 mayors x T terms (default 3 seeds, 3 terms, 20 years) -> `runs/runs.jsonl`, one line per episode with scores, memory snapshot, action histogram. Parallel, resumable.
-- [ ] 1.4.2 Report per mayor: min / median / max of the deterministic score per term; say plainly whether distributions overlap. Never quote a mean alone.
-- [ ] 1.4.3 Token-matched control "Reformer-shuffled": same memory size, lessons permuted before read. Config-only. If it does not drop, the effect is context length, and we say so.
-- [ ] 1.4.4 Self-catch detector: scan Reformer memory diffs for a lesson whose confidence dropped or that was deleted; save the (term, lesson, contradicting outcome) triple to `runs/selfcatch.json` for the demo.
+- [x] 1.4.1 Sweep runner: N seeds x 4 mayors x T terms (default 3 seeds, 3 terms, 20 years) -> `runs/runs.jsonl`, one line per episode with scores, memory snapshot, action histogram. Parallel, resumable.
+- [x] 1.4.2 Report per mayor: min / median / max of the deterministic score per term; say plainly whether distributions overlap. Never quote a mean alone.
+- [x] 1.4.3 Token-matched control "Reformer-shuffled": same memory size, lessons permuted before read. Config-only. If it does not drop, the effect is context length, and we say so.
+- [x] 1.4.4 Self-catch detector: scan Reformer memory diffs for a lesson whose confidence dropped or that was deleted; save the (term, lesson, contradicting outcome) triple to `runs/selfcatch.json` for the demo.
 - [ ] 1.4.5 Divergence test (first thing after harness works): 3 terms, 1 seed, all four. If Bureaucrat ~ Reformer, tune: log size, consultant bias magnitude, lesson cap.
 
 ### 2. Build a project that is visually appealing even for a non-technical audience
 
 #### 2.1 A city you can watch change
-- [ ] 2.1.1 `web/index.html` + `web/app.js`: static page, loads `runs/*.json`, 12x12 tile grid on canvas. Tile assignment deterministic from state: housing tier -> house sprites, factories -> smokestacks, parks -> trees, services -> civic buildings, empty -> lots. Same state, same picture.
-- [ ] 2.1.2 Sprite sheet: ~10 emoji/pixel sprites (no art time; emoji acceptable), 3 tiers each where it matters (shack/house/tower).
+- [x] 2.1.1 `web/index.html` + `web/app.js`: static page, loads `runs/*.json`, 12x12 tile grid on canvas. Tile assignment deterministic from state: housing tier -> house sprites, factories -> smokestacks, parks -> trees, services -> civic buildings, empty -> lots. Same state, same picture.
+- [x] 2.1.2 Sprite sheet: ~10 emoji/pixel sprites (no art time; emoji acceptable), 3 tiers each where it matters (shack/house/tower).
 #### 2.2 A decision is felt
-- [ ] 2.2.1 Per year: decision card (~3s) -> events animate tile by tile (~5s) -> score tick (~1s). Speed slider.
-- [ ] 2.2.2 Headline ticker from Events ("Factory opens: +120 jobs", "Rent riots: happiness -8").
-- [ ] 2.2.3 Cause tags: hover a changed tile -> "because: build_factory, year 4".
-- [ ] 2.2.4 Fuse: "pending consequences: N" badge from the pending queue.
+- [x] 2.2.1 Per year: decision card (~3s) -> events animate tile by tile (~5s) -> score tick (~1s). Speed slider.
+- [x] 2.2.2 Headline ticker from Events ("Factory opens: +120 jobs", "Rent riots: happiness -8").
+- [x] 2.2.3 Cause tags: hover a changed tile -> "because: build_factory, year 4".
+- [x] 2.2.4 Fuse: "pending consequences: N" badge from the pending queue.
 #### 2.3 Four cities side by side
-- [ ] 2.3.1 Four canvases, one timeline scrubber, synced year; each with mayor name, score, and the Reformer's current lessons panel (the self-catch shows here as a lesson turning red / disappearing).
-- [ ] 2.3.2 Seed selector and term selector from runs.jsonl.
+- [x] 2.3.1 Four canvases, one timeline scrubber, synced year; each with mayor name, score, and the Reformer's current lessons panel (the self-catch shows here as a lesson turning red / disappearing).
+- [x] 2.3.2 Seed selector and term selector from runs.jsonl.
 #### 2.4 The world embodies the economy (SHRUNK)
-- [ ] 2.4.1 Economy tier 0-3 derived from (employment, treasury, happiness). Tier drives: road sprites (horses / few cars / traffic), shop sprites (shuttered / open), sky tint (pollution). No NPC chat.
+- [x] 2.4.1 Economy tier 0-3 derived from (employment, treasury, happiness). Tier drives: road sprites (horses / few cars / traffic), shop sprites (shuttered / open), sky tint (pollution). No NPC chat.
 #### 2.5 Anyone in the room can play — DEFERRED (Sun 10:30, only if ahead; no leaderboard, no server)
 
 ### 3. Build a project that uses the sponsor platforms
@@ -119,7 +119,7 @@ the build. If a platform makes the project harder and worse, drop it. The one
 exception is W&B / Weave: it gives the robot dog and is never ruled out.
 
 #### 3.1 Weave — NON-NEGOTIABLE
-- [ ] 3.1.1 `weave.init` in runner; ops: year_decide, memory_read, memory_write, loop_action, judge_score. Attributes: mayor, seed, term, year.
+- [x] 3.1.1 `weave.init` in runner; ops: year_decide, memory_read, memory_write, loop_action, judge_score. Attributes: mayor, seed, term, year.
 - [ ] 3.1.2 Rubric as a `weave.Evaluation` over episodes (dataset = trajectories, scorer = judge + deterministic scoreboard).
 - [ ] 3.1.3 Saved Weave links for: one Caesar repeat-mistake trace, one Reformer self-catch trace (memory diff), the evaluation comparison. Pasted into README and demo script.
 #### 3.2 marimo — cheap, keep

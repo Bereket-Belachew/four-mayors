@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Four Mayors</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --ink:#e8e8ea; --muted:#9aa0aa; --line:#2a2f3a; --good:#4ade80; --bad:#f87171; --warn:#fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { display:flex; gap:16px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  header .thesis { color:var(--muted); }
+  .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 20px; border-bottom:1px solid var(--line); }
+  .controls label { color:var(--muted); }
+  select, button, input[type=range] { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
+  button { cursor:pointer; }
+  button.primary { background:#2563eb; border-color:#2563eb; }
+  #year { font-variant-numeric: tabular-nums; min-width:110px; }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:14px; padding:14px 20px; }
+  .city { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .city h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
+  .city h2 .score { font-variant-numeric: tabular-nums; color:var(--warn); }
+  canvas { width:100%; aspect-ratio:1; border-radius:6px; background:#0b0d12; image-rendering: pixelated; }
+  .stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:4px 8px; font-size:12px; color:var(--muted); }
+  .stats b { color:var(--ink); font-weight:500; }
+  .ticker { min-height:60px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:6px; }
+  .ticker .ev { display:block; }
+  .ticker .up { color:var(--good); } .ticker .down { color:var(--bad); }
+  .lessons { font-size:12px; border-top:1px solid var(--line); padding-top:6px; }
+  .lessons .l { display:block; padding:2px 0; }
+  .lessons .failed { color:var(--bad); text-decoration: line-through; }
+  .lessons .held { color:var(--good); }
+  .fuse { font-size:12px; color:var(--warn); }
+  .decision { font-size:12px; color:var(--ink); background:#1f2937; border-radius:6px; padding:6px 8px; min-height:34px; }
+  .tip { position:fixed; pointer-events:none; background:#000; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; display:none; z-index:10; }
+  footer { padding:10px 20px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Four Mayors</h1>
+  <span class="thesis">Same city, same model, same seed. Mayors that differ only in how they close the loop. Watch which city grows.</span>
+</header>
+<div class="controls">
+  <label>runs <input id="file" type="file" accept=".jsonl,.json" /></label>
+  <label>seed <select id="seed"></select></label>
+  <label>term <select id="term"></select></label>
+  <button id="play" class="primary">▶ play</button>
+  <button id="step">step</button>
+  <label>speed <input id="speed" type="range" min="1" max="10" value="4" /></label>
+  <input id="scrub" type="range" min="0" max="20" value="0" style="flex:1; min-width:160px" />
+  <span id="year">year 0 / 20</span>
+</div>
+<main id="cities"></main>
+<footer>Every tile is a function of the state. Hover a changed tile to see which decision caused it, and when. "Pending" is the fuse: consequences already decided but not yet landed.</footer>
+<div class="tip" id="tip"></div>
+
+<script>
+// ---------- data ----------
+let episodes = [];   // all lines from runs.jsonl
+let view = [];       // episodes for the selected (seed, term), one per mayor
+let year = 0, playing = false, timer = null;
+const ORDER = ["caesar", "bureaucrat", "reformer", "populist", "reformer_shuffled"];
+const NAMES = { caesar: "Caesar", bureaucrat: "The Bureaucrat", reformer: "The Reformer", populist: "The Populist", reformer_shuffled: "Reformer (shuffled control)" };
+
+async function loadDefault() {
+  try { const r = await fetch("../runs/runs.jsonl"); if (r.ok) parse(await r.text()); } catch (e) {}
+}
+function parse(text) {
+  episodes = text.split("\n").filter(Boolean).map(l => JSON.parse(l));
+  const seeds = [...new Set(episodes.map(e => e.seed))].sort((a,b)=>a-b);
+  const terms = [...new Set(episodes.map(e => e.term))].sort((a,b)=>a-b);
+  fill("seed", seeds); fill("term", terms);
+  select();
+}
+function fill(id, xs) { const s = document.getElementById(id); s.innerHTML = xs.map(x => `<option>${x}</option>`).join(""); }
+function select() {
+  const seed = +document.getElementById("seed").value, term = +document.getElementById("term").value;
+  view = episodes.filter(e => e.seed === seed && e.term === term)
+                 .sort((a,b) => ORDER.indexOf(a.mayor) - ORDER.indexOf(b.mayor));
+  year = 0; build(); render();
+}
+
+// ---------- tiles: a deterministic function of state ----------
+// 12x12 grid. Tile kinds: empty, shack, house, tower, factory, park, civic, road.
+function tilesFor(s) {
+  const N = 12, t = [];
+  const hu = s.housing, tier = s.economy_tier;
+  const houses = Math.min(60, Math.round(hu / 40));          // ~1 tile per 40 units
+  const factories = Math.min(20, s.factories);
+  const parks = Math.min(20, s.parks);
+  const civic = Math.min(12, Math.round(s.services / 12));
+  const occ = Math.min(1, s.population / Math.max(hu, 1));   // occupancy drives shack/house/tower mix
+  // fixed placement order so the same state always draws the same picture
+  const spots = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (r % 4 === 3 || c % 4 === 3) { spots.push(null); continue; } // roads
+    spots.push([r, c]);
+  }
+  const lots = spots.map((p, i) => p ? i : -1).filter(i => i >= 0);
+  // deterministic shuffle by index (no rng): a fixed permutation
+  const perm = lots.map((i, k) => [((k * 37) % lots.length), i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  const kinds = new Array(N*N).fill("empty");
+  spots.forEach((p, i) => { if (!p) kinds[i] = "road"; });
+  let k = 0;
+  for (let i = 0; i < houses && k < perm.length; i++, k++) kinds[perm[k]] = occ > 0.9 ? (tier >= 2 ? "tower" : "house") : (occ > 0.6 ? "house" : "shack");
+  for (let i = 0; i < factories && k < perm.length; i++, k++) kinds[perm[k]] = "factory";
+  for (let i = 0; i < parks && k < perm.length; i++, k++) kinds[perm[k]] = "park";
+  for (let i = 0; i < civic && k < perm.length; i++, k++) kinds[perm[k]] = "civic";
+  // shuttered shops appear when the economy is bad: convert some houses to "shuttered"
+  if (tier <= 1) for (let i = 0; i < N*N; i += 7) if (kinds[i] === "house" || kinds[i] === "shack") kinds[i] = "shuttered";
+  return { kinds, N, tier, pollution: s.pollution };
+}
+const GLYPH = { empty: "", shack: "🛖", house: "🏠", tower: "🏢", factory: "🏭", park: "🌳", civic: "🏛️", shuttered: "🏚️", road: "" };
+function drawCity(cv, s, prevKinds, changedTiles) {
+  const ctx = cv.getContext("2d");
+  const W = cv.width = cv.clientWidth * 2, H = cv.height = W;
+  const { kinds, N, tier, pollution } = tilesFor(s);
+  // sky tint from pollution
+  const smog = Math.min(1, pollution / 100);
+  ctx.fillStyle = `rgb(${Math.round(20 + 80*smog)}, ${Math.round(28 + 60*smog)}, ${Math.round(40 + 20*smog)})`;
+  ctx.fillRect(0, 0, W, H);
+  const cell = W / N;
+  ctx.font = `${cell * 0.7}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const i = r * N + c, kind = kinds[i], x = c * cell, y = r * cell;
+    if (kind === "road") {
+      ctx.fillStyle = "#3a3f4a"; ctx.fillRect(x, y, cell, cell);
+      // vehicles: horses at tier 0, few cars at 1, traffic at 2-3
+      if ((r + c) % (tier === 0 ? 9 : tier === 1 ? 6 : 3) === 0) { ctx.font = `${cell*0.5}px serif`; ctx.fillText(tier === 0 ? "🐎" : "🚗", x + cell/2, y + cell/2); ctx.font = `${cell * 0.7}px serif`; }
+      continue;
+    }
+    ctx.fillStyle = kind === "park" ? "#1f3d2b" : kind === "empty" ? "#141820" : "#1c212b";
+    ctx.fillRect(x + 1, y + 1, cell - 2, cell - 2);
+    if (GLYPH[kind]) ctx.fillText(GLYPH[kind], x + cell/2, y + cell/2 + 2);
+    if (prevKinds && prevKinds[i] !== kind) { ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 3; ctx.strokeRect(x + 2, y + 2, cell - 4, cell - 4); changedTiles.push({ r, c, from: prevKinds[i], to: kind }); }
+  }
+  return kinds;
+}
+
+// ---------- build cards ----------
+function build() {
+  const main = document.getElementById("cities"); main.innerHTML = "";
+  for (const ep of view) {
+    const el = document.createElement("section"); el.className = "city"; el.dataset.mayor = ep.mayor;
+    el.innerHTML = `<h2><span>${NAMES[ep.mayor] || ep.mayor}</span><span class="score" title="deterministic scoreboard at end of term">score ${ep.scoreboard?.total ?? "–"}</span></h2>
+      <div class="decision"></div>
+      <canvas></canvas>
+      <div class="stats"></div>
+      <div class="fuse"></div>
+      <div class="ticker"></div>
+      <div class="lessons"></div>`;
+    main.appendChild(el);
+    el._prevKinds = null;
+    el.querySelector("canvas").addEventListener("mousemove", e => hover(e, el, ep));
+    el.querySelector("canvas").addEventListener("mouseleave", () => document.getElementById("tip").style.display = "none");
+  }
+  const maxY = Math.max(...view.map(e => e.years), 1);
+  document.getElementById("scrub").max = maxY;
+}
+
+function stateAt(ep, y) {
+  if (y === 0) return ep.history[0]?.state_before ?? ep.final_state;
+  const rec = ep.history[Math.min(y, ep.history.length) - 1];
+  return rec.state;
+}
+
+function render() {
+  document.getElementById("year").textContent = `year ${year} / 20`;
+  document.getElementById("scrub").value = year;
+  for (const el of document.querySelectorAll(".city")) {
+    const ep = view.find(e => e.mayor === el.dataset.mayor);
+    const s = stateAt(ep, year);
+    const rec = year > 0 ? ep.history[Math.min(year, ep.history.length) - 1] : null;
+    const ended = year >= ep.years && ep.ended !== "horizon";
+    el._changed = [];
+    el._prevKinds = drawCity(el.querySelector("canvas"), s, el._prevKinds, el._changed);
+    el._lastEvents = rec ? rec.events : [];
+    el.querySelector(".stats").innerHTML = [
+      ["pop", s.population], ["jobs", s.jobs], ["treasury", s.treasury], ["happy", s.happiness],
+      ["housing", s.housing], ["pollution", s.pollution], ["services", s.services], ["unemp", Math.round((s.unemployment||0)*100) + "%"],
+    ].map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
+    el.querySelector(".decision").textContent = rec
+      ? (rec.actions.length ? rec.actions.map(a => `${a.name}(${Object.values(a.args).map(v => typeof v === "number" ? Math.round(v*100)/100 : v).join(",")})`).join(" · ") : "did nothing")
+        + (rec.reasoning ? ` — “${rec.reasoning.slice(0, 120)}”` : "")
+      : "term begins";
+    el.querySelector(".fuse").textContent = rec ? `pending consequences: ${rec.pending_count}` + (ended ? `  ·  ENDED: ${ep.ended.toUpperCase()}` : "") : "";
+    const evs = (rec ? rec.events : []).filter(e => e.cause_action !== "economy" || Math.abs(e.delta) > 25).slice(0, 5);
+    el.querySelector(".ticker").innerHTML = evs.map(e =>
+      `<span class="ev ${e.delta > 0 ? "up" : "down"}">${e.variable} ${e.delta > 0 ? "+" : ""}${Math.round(e.delta)} <span style="opacity:.7">because ${e.cause_action} (y${e.cause_year})${e.note ? ": " + e.note : ""}</span></span>`).join("");
+    // lessons panel: memory before this term, with this term's verdicts once the term is over
+    const before = ep.memory_before?.lessons || [];
+    const verdicts = year >= ep.years ? (ep.memory_diff?.checked || []) : [];
+    if (ep.memory_before?.policy === "opinion_log") {
+      el.querySelector(".lessons").innerHTML = `<span class="l">records carried in: <b>${ep.memory_before.opinion_log_entries}</b> (${Math.round(ep.memory_before.opinion_log_chars/1000)}k chars, none checked against outcomes)</span>`;
+    } else if (before.length || verdicts.length) {
+      el.querySelector(".lessons").innerHTML = before.map(l => {
+        const v = verdicts.find(x => x.rule === l.rule);
+        const cls = v ? (v.verdict === "failed" ? "failed" : v.verdict === "held" ? "held" : "") : "";
+        return `<span class="l ${cls}">• ${l.rule} <span style="opacity:.6">(${l.confidence})${v && v.deleted ? " — deleted" : v && v.verdict === "failed" ? ` — contradicted, ${v.before}→${v.after}` : ""}</span></span>`;
+      }).join("");
+    } else {
+      el.querySelector(".lessons").innerHTML = ep.memory_before?.policy === "none" ? `<span class="l" style="opacity:.6">carries nothing between terms</span>` : `<span class="l" style="opacity:.6">no lessons yet</span>`;
+    }
+  }
+}
+
+function hover(e, el, ep) {
+  const tip = document.getElementById("tip");
+  const cv = e.target, rect = cv.getBoundingClientRect();
+  const N = 12, c = Math.floor((e.clientX - rect.left) / rect.width * N), r = Math.floor((e.clientY - rect.top) / rect.height * N);
+  const ch = (el._changed || []).find(t => t.r === r && t.c === c);
+  if (!ch) { tip.style.display = "none"; return; }
+  const cause = (el._lastEvents || []).find(ev => ["housing", "factories", "parks", "services", "population"].includes(ev.variable) && ev.cause_action !== "economy")
+             || (el._lastEvents || [])[0];
+  tip.textContent = `${ch.from} → ${ch.to}` + (cause ? `  because: ${cause.cause_action}, year ${cause.cause_year}` : "");
+  tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.display = "block";
+}
+
+// ---------- playback: two clocks ----------
+function tick() {
+  const maxY = +document.getElementById("scrub").max;
+  if (year >= maxY) { stop(); return; }
+  year++; render();
+}
+function play() { if (playing) return stop(); playing = true; document.getElementById("play").textContent = "❚❚ pause"; schedule(); }
+function schedule() { const spd = +document.getElementById("speed").value; timer = setTimeout(() => { tick(); if (playing) schedule(); }, 10000 / spd); }
+function stop() { playing = false; clearTimeout(timer); document.getElementById("play").textContent = "▶ play"; }
+
+document.getElementById("play").onclick = play;
+document.getElementById("step").onclick = () => { stop(); tick(); };
+document.getElementById("scrub").oninput = e => { stop(); year = +e.target.value; for (const el of document.querySelectorAll(".city")) el._prevKinds = null; render(); };
+document.getElementById("seed").onchange = select;
+document.getElementById("term").onchange = select;
+document.getElementById("file").onchange = async e => { const f = e.target.files[0]; if (f) parse(await f.text()); };
+window.addEventListener("resize", render);
+loadDefault();
+</script>
+</body>
+</html>
