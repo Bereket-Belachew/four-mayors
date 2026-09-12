@@ -43,6 +43,11 @@ exception is W&B / Weave: it gives the robot dog and is never ruled out.
 
 ### 4. It gets submitted and demoed on time
 
+#### 4.1 Something demoable exists by Saturday 21:00 (one city, one mayor, changing)
+#### 4.2 Submission in before 13:00 Sunday (AGI House sign-in verified Saturday; repo public; README; fallback video attached)
+#### 4.3 A rehearsed three-minute demo (script written, run twice, captured output saved)
+#### 4.4 A social media clip, 30–60s, four cities diverging (doubles as the fallback video)
+
 <!-- Level 1 (four nodes) agreed 2026-09-12 ~10:10. Next level proposed, not yet agreed. -->
 
 - TBD: tickets live in PLAN.md + git for now; Linear workspace choice pending (only team is Fana AI).
