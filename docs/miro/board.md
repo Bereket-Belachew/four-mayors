@@ -21,3 +21,5 @@ Level 3 under n11: vertical stack x=-960, 300x70, y=440,540,...,940: n111 345876
 n33 text updated (models decided). Level 4 under n111 goes to the right of the stack: x=-620, y=440.., 260x60.
 State table (1.1.1) 3458764683527024352 at (-600,380), rendered 791x606 -> occupies x -600..191, y 380..986. Connector ...353.
 n12 children: place at x=250.., y=440 (right of the table) or below y=1050.
+Level 3 under n12: stack x=-960, y=1080..1480: n121 3458764683527365696 · n122 ...697 · n123 ...698 · n124 ...699 · n125 ...700; connectors ...711-716. Feedback table ...709 at (-600,1080) rendered 1016x438 (to x=416, y=1518). Inner-loop sticky ...701 at (-1400,1080).
+Next free area: y>=1600 for 1.3/1.4 children, or x>=500 at y=440+ (right of state table).
