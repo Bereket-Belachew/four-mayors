@@ -10,6 +10,13 @@ Everything below exists to make this line true. -->
 
 **Thesis (one sentence for a judge):** Same city, same model, same seed. Four mayors that differ only in how they close the loop. Watch which city grows.
 
+## TODO after the isometric page (logged 2026-09-12 16:35, his ask)
+- [ ] TypeSafe as a second judge (rubric criteria as `score` questions; compare with formula + Claude). ~30 min. Then maybe a System-One Caesar (classification mayor) as a provider benchmark.
+- [ ] Taxes scaled by service quality (tax penalty shrinks when services are good). 2 lines + WORLD-RULES sentence.
+- [ ] Environmentalist (Dr. Nadia) as a third consultant, bias = mirror of the industrialist.
+- [ ] AGI House sign-in + participant survey (Bereket).
+- [ ] Background proof runs: seed sweep with shuffled control; Claude judge + controls; self-catch hunt across seeds.
+
 ## Decisions log — afternoon (2026-09-12, 14:30–16:10, with Bereket)
 - World numbers all live in `sim/params.py`; plain-language rules in `docs/WORLD-RULES.md` (his review doc).
 - Hard starts per seed (unemployment / smog / debt / housing shortage). Seeds now mean something.
