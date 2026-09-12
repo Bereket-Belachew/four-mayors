@@ -17,6 +17,16 @@ Tag anything uncertain with TBD: rather than silently guessing. -->
 ### 1. Build a project that is technically impressive
 
 #### 1.1 A deterministic city world (seeded, pure function, reproducible)
+
+Vocabulary: **step** = one year. **Episode** = one term of office (~20 years). Outer loop = re-election; memory carries between terms.
+
+- 1.1.1 A small state: six or seven numbers with a plain meaning and a range
+- 1.1.2 Two kinds of actions: world levers (identical for all mayors) and loop actions (deterministic results computed by the world; availability differs per mayor)
+- 1.1.3 One pure step function: state, actions, seed in; next state out (referendum results and forecasts included)
+- 1.1.4 Consequences carry a cause and a delay (every change tagged with action+year; slow effects in a pending queue)
+- 1.1.5 It does not break and it is hard to game cheaply (do-nothing year valid; bounds hold; one lever looks great and is secretly ruinous)
+- 1.1.6 An episode has a defined end: 20-year horizon, or early exit on bankruptcy, depopulation, or revolt (happiness below floor for 3 years). End state + trajectory both go to the judge.
+- Presentation time ≠ compute time: episodes are recorded and replayed at ~10s/step; only the human plays live. Recordings are the demo fallback.
 #### 1.2 Mayors that differ only in how they close the loop (same model, same seed; human is the fifth)
 #### 1.3 A hidden rubric and a judge that never leaks into the mayors
 #### 1.4 Proof it improves (several runs per mayor, variance shown, one visible self-catch)
@@ -37,7 +47,7 @@ exception is W&B / Weave: it gives the robot dog and is never ruled out.
 
 #### 3.1 Weave traces the loop itself (terms, memory reads/writes, judge scores; rubric as a Weave Evaluation) — NON-NEGOTIABLE
 #### 3.2 A marimo notebook compares the loops across seeds (runnable in molab) — optional
-#### 3.3 Mayors run on sponsor models (W&B Inference; TypeSafe only if it fits) — optional
+#### 3.3 Models: mayors on GPT 5.6 Luna (OpenAI; he has API access; same model for all four). Judge on Claude Sonnet 5 or Opus 5 (different lab from the mayors, on purpose). One provider adapter behind one interface; W&B Inference / Haiku 4.5 as fallback for rate limits. TypeSafe only if it fits.
 #### 3.4 ARIA is used to build, or we say no — decide at kickoff
 #### 3.5 Every use is visible in the README (one screenshot, one sentence each)
 
