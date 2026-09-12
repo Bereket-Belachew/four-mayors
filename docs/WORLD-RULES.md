@@ -248,6 +248,55 @@ to a log that is never checked against anything.
 
 ---
 
+## 9. Added 2026-09-12 ~15:00, after the first real run
+
+**Every number now lives in `sim/params.py`**, under the bracketed names used above. Change it
+there. Rules that change behavior are behind flags so a change can be compared against the old
+behavior on the same seed.
+
+### Hard starts: each seed opens on a different problem [SCENARIOS]
+
+| Seed | Scenario | What is wrong on day one |
+|---|---|---|
+| 0 | unemployment | only 420 jobs for a workforce of 600 (30% idle), happiness 48, treasury 400 |
+| 1 | smog | pollution 70, six factories and no parks, 1300 jobs, happiness 45 |
+| 2 | debt | 2500 owed, treasury −800, services 30 |
+| 3 | housing shortage | 550 homes for 1000 people, happiness 42 |
+
+Left alone: the unemployment city ends 2800 in the red, the smog city hits pollution 100 and
+happiness 33, the debt city goes bankrupt in year 15, the shortage city loses half its people.
+Each is a real problem with a different first move. A lesson learned on one is tested on another.
+
+### Land is finite [land_enabled, off by default until confirmed]
+
+The city has 81 lots [lots_total]: the 12 by 12 grid minus roads. A factory takes 2
+[lots_per_factory], a park 1 [lots_per_park], every 100 housing units 1 [lots_per_100_housing].
+Lots are reserved the year a build is ordered so two orders cannot claim the same land. When
+lots run out, a build is refused and logged. Two new levers appear: **demolish** (factory, park,
+or 100 housing; a demolished factory takes its 150 jobs with it) and **buy land** (400 per lot
+[buy_land_cost], up to 10 a year). The picture on screen is now literally the land.
+
+**Open question for you:** at 81 lots, money ran out before land did in a factory-spam test
+(15 factories, 26 lots still free). If land should bite, 60 lots is the number to try.
+
+### Trees cannot cancel smoke one for one [park_mode = "absorb"]
+
+Old rule: each park subtracts a fixed 1.5 pollution a year, so nine parks beat any number of
+factories and pollution hits zero. New rule: factories emit 2 each [factory_smoke], people emit
+1 per thousand [population_smoke], and parks absorb a **share** of whatever is in the air: the
+first park 12% [park_absorb_first], each additional park 80% of the previous one's share
+[park_absorb_decay]. Nine parks absorb about 45% of ambient pollution a year, never all of it.
+Test: eleven parks against three factories now settle at pollution 10.6 instead of 0.
+
+### Consultants forecast honestly, then lie [forecast_mode = "simulate"]
+
+The base forecast is now a real simulation of one quiet year on a copy of the city, so it is
+exactly as wrong as the consultant's bias and no more. The fee (30) is charged before the
+forecast, so the treasury line is 30 lower than a free forecast would be. Old naive formula
+kept behind `forecast_mode = "naive"`.
+
+---
+
 ## What would refute this design
 
 - If a real model finds the parks-plus-factories recipe in its first term, the ceiling is too
