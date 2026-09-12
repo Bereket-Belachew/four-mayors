@@ -77,16 +77,38 @@ CURRENT STATE (json):
 
 Year {year} of {horizon}. Decide."""
 
-POST_MORTEM_TEMPLATE = """POST-MORTEM. Your term has ended. Below is what actually happened, with every change
-attributed to the decision that caused it (the 'economy' entries are background drift).
+POST_MORTEM_TEMPLATE = """POST-MORTEM. Your term has ended. Below is the year-by-year record: what you did and where
+the city stood after each year.
 
-{summary}
+{record}
 
-Write at most 4 lessons for your next term. Each lesson must be falsifiable: name the lever
-it is about, the state variable it predicts, and the direction. Use exactly this JSON:
-{{"lessons": [{{"when": "<condition on the city>", "did": "<what you did>", "outcome": "<what followed>",
-"rule": "<one sentence rule>", "action": "<lever name or ''>", "variable": "<population|jobs|treasury|pollution|happiness|services or ''>",
-"direction": "<up|down|''>", "confidence": <0..1>}}]}}"""
+Write at most 4 lessons for your next term. RULES:
+- Do NOT restate what a lever does (everyone knows factories add jobs and cost money). A lesson
+  is about WHEN to do something, in what ORDER, or what to AVOID, given how the city looks.
+- Every lesson must carry a measurable prediction that could turn out false: a variable, a
+  comparator, a value, and a year of the term by which it should hold.
+- Prefer lessons about the mistakes in this record over lessons about what went well.
+Use exactly this JSON:
+{{"lessons": [{{"condition": "<when the city looks like...>", "strategy": "<do / avoid ...>",
+"rule": "<one sentence combining both>",
+"prediction": {{"variable": "<population|housing|jobs|treasury|debt|pollution|happiness|services>",
+"comparator": "<>=|<=>", "value": <number>, "by_year": <1..20>}},
+"confidence": <0..1>}}]}}"""
+
+REVIEW_TEMPLATE = """REVIEW OF LAST TERM'S LESSONS. Before this term you held the lessons below. Here is what
+actually happened this term, year by year.
+
+LESSONS:
+{lessons}
+
+RECORD:
+{record}
+
+For each lesson, say whether you actually APPLIED its strategy this term (true/false), and whether
+the record supports it: "held", "failed", or "untested" (condition never arose, or strategy not
+applied). Quote the year line that is your evidence. Be harsh: a lesson you followed whose
+prediction did not come true has failed. JSON only:
+{{"reviews": [{{"id": <lesson id>, "applied": <true|false>, "verdict": "<held|failed|untested>", "evidence": "<quoted year line>"}}]}}"""
 
 
 class Mayor:
@@ -96,6 +118,7 @@ class Mayor:
         self.llm = llm or LLM(LLMConfig())
         self.memory = Memory(policy=self.cfg["memory_policy"])
         self.loop_actions: list[str] = list(self.cfg.get("loop_actions", []))
+        self.city: dict[str, Any] | None = None  # the city as the last term left it (persistence)
         self.system = SYSTEM_TEMPLATE.format(
             persona=self.cfg["persona"].strip(),
             levers=_levers_doc(),
@@ -132,8 +155,10 @@ class Mayor:
 
     # ----- one term ------------------------------------------------------------
     @weave.op()
-    def serve_term(self, seed: int, term_index: int, scenario: str | None = None, params=None) -> dict[str, Any]:
-        world = new_world(seed, scenario, params)
+    def serve_term(self, seed: int, term_index: int, scenario: str | None = None, params=None,
+                   persist: bool = True) -> dict[str, Any]:
+        carry = self.city if (persist and term_index > 0) else None
+        world = new_world(seed, scenario, params, carry=carry, term=term_index)
         memory_text = memory_read(self.memory)
         pending_loop_results: list[dict[str, Any]] = []
         tool_use: dict[str, int] = {}
@@ -147,12 +172,14 @@ class Mayor:
             reasonings.append(decision["reasoning"])
             pending_loop_results = rec["loop_results"]
         memory_before = self.memory.to_dict()
-        diff = memory_write(self.memory, world.history, self._post_mortem)
+        diff = memory_write(self.memory, world.history, self._post_mortem, self._review)
+        self.city = world.state.public(world.params)
         return {
             "mayor": self.name,
             "seed": seed,
             "term": term_index,
             "scenario": world.scenario,
+            "inherited": carry is not None,
             "ended": world.ended,
             "years": len(world.history),
             "final_state": world.state.public(world.params),
@@ -164,9 +191,14 @@ class Mayor:
         }
 
     @weave.op()
-    def _post_mortem(self, summary_json: str) -> dict[str, Any]:
-        return self.llm.complete_json(self.system, POST_MORTEM_TEMPLATE.format(summary=summary_json),
+    def _post_mortem(self, record: str) -> dict[str, Any]:
+        return self.llm.complete_json(self.system, POST_MORTEM_TEMPLATE.format(record=record),
                                       purpose=f"{self.name}:post_mortem")
+
+    @weave.op()
+    def _review(self, lessons_json: str, record: str) -> dict[str, Any]:
+        return self.llm.complete_json(self.system, REVIEW_TEMPLATE.format(lessons=lessons_json, record=record),
+                                      purpose=f"{self.name}:review")
 
 
 def run_terms(name: str, seed: int, terms: int, llm: LLM | None = None) -> list[dict[str, Any]]:

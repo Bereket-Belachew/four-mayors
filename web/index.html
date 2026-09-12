@@ -22,6 +22,12 @@
   .city h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
   .city h2 .score { font-variant-numeric: tabular-nums; color:var(--warn); }
   canvas { width:100%; aspect-ratio:1; border-radius:6px; background:#0b0d12; image-rendering: pixelated; }
+  .health { display:grid; grid-template-columns: 1fr 1fr; gap:3px 12px; font-size:11px; color:var(--muted); }
+  .hb { display:grid; grid-template-columns: 62px 1fr 30px; align-items:center; gap:6px; }
+  .hb.total { grid-column: 1 / -1; color:var(--ink); }
+  .ht { height:7px; background:#0b0d12; border-radius:4px; overflow:hidden; }
+  .hf { display:block; height:100%; transition: width .6s ease; }
+  .hv { text-align:right; font-variant-numeric: tabular-nums; }
   .stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:4px 8px; font-size:12px; color:var(--muted); }
   .stats b { color:var(--ink); font-weight:500; }
   .ticker { min-height:60px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:6px; }
@@ -144,9 +150,10 @@ function build() {
   const main = document.getElementById("cities"); main.innerHTML = "";
   for (const ep of view) {
     const el = document.createElement("section"); el.className = "city"; el.dataset.mayor = ep.mayor;
-    el.innerHTML = `<h2><span>${NAMES[ep.mayor] || ep.mayor}</span><span class="score" title="deterministic scoreboard at end of term">score ${ep.scoreboard?.total ?? "–"}</span></h2>
+    el.innerHTML = `<h2><span>${NAMES[ep.mayor] || ep.mayor}${ep.inherited ? ' <span style="opacity:.5;font-weight:400">· inherited city</span>' : ""}</span><span class="score" title="deterministic scoreboard at end of term">score ${ep.scoreboard?.total ?? "–"}</span></h2>
       <div class="decision"></div>
       <canvas></canvas>
+      <div class="health"></div>
       <div class="stats"></div>
       <div class="fuse"></div>
       <div class="ticker"></div>
@@ -177,6 +184,15 @@ function render() {
     el._changed = [];
     el._prevKinds = drawCity(el.querySelector("canvas"), s, el._prevKinds, el._changed);
     el._lastEvents = rec ? rec.events : [];
+    // health bars: six criteria, 0-10, from the per-year scoreboard
+    const sby = ep.scoreboard_by_year || [];
+    const sb = year > 0 ? sby[Math.min(year, sby.length) - 1] : null;
+    const CRIT = [["prosperity","jobs"],["housing","homes"],["fiscal","money"],["environment","air"],["wellbeing","mood"],["resilience","resilience"]];
+    el.querySelector(".health").innerHTML = CRIT.map(([k, label]) => {
+      const v = sb ? sb[k] : 0, pct = Math.round(v * 10);
+      const col = v >= 7 ? "var(--good)" : v >= 4 ? "var(--warn)" : "var(--bad)";
+      return `<div class="hb"><span class="hl">${label}</span><span class="ht"><span class="hf" style="width:${pct}%;background:${col}"></span></span><span class="hv">${v.toFixed(1)}</span></div>`;
+    }).join("") + (sb ? `<div class="hb total"><span class="hl">total</span><span class="ht"><span class="hf" style="width:${Math.round(sb.total/60*100)}%;background:var(--warn)"></span></span><span class="hv">${sb.total.toFixed(1)}/60</span></div>` : "");
     el.querySelector(".stats").innerHTML = [
       ["pop", s.population], ["jobs", s.jobs], ["treasury", s.treasury], ["happy", s.happiness],
       ["housing", s.housing], ["pollution", s.pollution], ["services", s.services], ["unemp", Math.round((s.unemployment||0)*100) + "%"],

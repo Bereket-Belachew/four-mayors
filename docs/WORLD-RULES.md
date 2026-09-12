@@ -295,6 +295,26 @@ exactly as wrong as the consultant's bias and no more. The fee (30) is charged b
 forecast, so the treasury line is 30 lower than a free forecast would be. Old naive formula
 kept behind `forecast_mode = "naive"`.
 
+### The city persists across terms [decided 2026-09-12 ~15:30]
+
+Term two starts where term one ended: population, homes, jobs, treasury, debt, pollution,
+happiness, services, factories, parks, land. The year counter resets, and so do the "years in
+a row unhappy/broke" streaks, so a new term is not deposed on day one for the old term's misery.
+Noise is re-seeded per term. Consequence: "same seed" holds only at term one; after that the four
+cities differ because of what each mayor did, which is the point. Borrowing now hurts in the
+city, not only on paper. The fiscal grade also now scores **net worth** (treasury minus debt).
+
+### Lessons, redesigned [same time]
+
+The first real run produced lessons like "funding services raises services," true and unfalsifiable.
+A lesson is now: **when** the city looks like X, **do/avoid** Y, and **expect** variable V to be
+on one side of a value by year N. The post-mortem prompt forbids restating what a lever does.
+At the end of the next term, the model reviews each lesson against the year-by-year record and
+says whether it applied the strategy and whether the record supports it, quoting the evidence.
+Where the lesson has a measurable prediction and was applied, the prediction is checked by code
+and overrides the model's verdict. Confidence arithmetic stays in code. Lessons with no
+measurable prediction are rejected at write time.
+
 ---
 
 ## What would refute this design

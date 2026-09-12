@@ -82,13 +82,13 @@ class LLM:
 
 def _mock_policy(user: str) -> dict[str, Any]:
     m = re.search(r"CURRENT STATE \(json\):\s*(\{.*?\})\s*\n", user, flags=re.S)
+    if "REVIEW OF LAST TERM" in user:
+        return {"reviews": [{"id": 0, "applied": True, "verdict": "held", "evidence": "mock"}]}
     if "POST-MORTEM" in user:
-        return {
-            "lessons": [
-                {"when": "pollution above 50", "did": "built factories", "outcome": "happiness fell",
-                 "rule": "build a park for every factory", "confidence": 0.6}
-            ]
-        }
+        return {"lessons": [{"condition": "pollution above 50", "strategy": "build a park before any factory",
+                             "rule": "When pollution is above 50, build a park before any factory.",
+                             "prediction": {"variable": "pollution", "comparator": "<=", "value": 40, "by_year": 10},
+                             "confidence": 0.6}]}
     if not m:
         return {"actions": [], "reasoning": "mock: no state found"}
     s = json.loads(m.group(1))

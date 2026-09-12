@@ -188,6 +188,7 @@ class World:
     pending: list[Pending] = field(default_factory=list)
     history: list[dict[str, Any]] = field(default_factory=list)
     ended: str | None = None
+    start_public: dict[str, Any] | None = None  # the city on day one of this term (carried or fresh)
 
     def _rng(self, year: int, salt: str = "") -> random.Random:
         h = hashlib.sha256(f"{self.seed}:{year}:{salt}".encode()).hexdigest()
@@ -524,7 +525,7 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
 
     record = {
         "year": year,
-        "state_before": world.history[-1]["state"] if world.history else State.from_params(p).public(p),
+        "state_before": world.history[-1]["state"] if world.history else (world.start_public or State.from_params(p).public(p)),
         "actions": [asdict(a) for a in accepted],
         "ignored": ignored,
         "loop_results": loop_results,
@@ -543,9 +544,29 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def new_world(seed: int, scenario: str | None = None, params: Params | None = None) -> World:
+def new_world(seed: int, scenario: str | None = None, params: Params | None = None,
+              carry: dict[str, Any] | None = None, term: int = 0) -> World:
+    """A fresh city for the scenario, or, if `carry` is given, the city as the last term left it.
+
+    Persistence (decided 2026-09-12): term two starts where term one ended. Debt, smoke,
+    factories, land all carry. Year resets to 0; the unhappy/broke streak counters reset so
+    a new term is not deposed on day one for the old term's misery. The seed is salted with
+    the term index so noise differs between terms.
+    """
     p = params_for(scenario, params or DEFAULT)
-    return World(seed=seed, params=p, scenario=scenario or "default", state=State.from_params(p))
+    if carry is None:
+        st = State.from_params(p)
+    else:
+        st = State(
+            population=carry["population"], housing=carry["housing"], jobs=carry["jobs"],
+            treasury=carry["treasury"], pollution=carry["pollution"], happiness=carry["happiness"],
+            services=carry["services"], tax_rate=carry["tax_rate"], transit=carry["transit_level"],
+            factories=carry["factories"], parks=carry["parks"], debt=carry["debt"],
+            lots_extra=carry.get("lots_total", p.lots_total) - p.lots_total if "lots_total" in carry else 0,
+        )
+    w = World(seed=seed * 1000 + term, params=p, scenario=scenario or "default", state=st)
+    w.start_public = st.public(p)
+    return w
 
 
 def run_script(seed: int, script: list[list[Action]], scenario: str | None = None,

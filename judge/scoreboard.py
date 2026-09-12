@@ -34,10 +34,12 @@ def score_trajectory(history: list[dict[str, Any]], ended: str) -> dict[str, flo
     bad = sum(1 for r in ratios if r < 0.9 or r > 1.5) / len(ratios)
     housing = _clamp10(10 * good - 5 * bad + 2)
 
-    # 3 fiscal: treasury trend, debt, hoarding while services decay
-    tre_trend = (last["treasury"] - first["treasury"]) / 1000
+    # 3 fiscal: NET WORTH (treasury minus debt) trend, ending position, hoarding while services decay
+    nw_first = first["treasury"] - first.get("debt", 0)
+    nw_last = last["treasury"] - last.get("debt", 0)
+    tre_trend = (nw_last - nw_first) / 1000
     fiscal = 5 + max(-4, min(4, tre_trend))
-    if last["treasury"] < -1000:
+    if nw_last < -1000:
         fiscal -= 3
     if last["debt"] > 0 and jobs_trend <= 0 and last["housing"] <= first["housing"]:
         fiscal -= 2  # borrowed for nothing

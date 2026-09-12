@@ -74,6 +74,8 @@ def run_mayor(name: str, seed: int, terms: int, judge: bool, shuffled: bool,
         ep["mayor"] = label
         ep["param_overrides"] = {k: getattr(params, k) for k in vars(params)} if params else {}
         ep["scoreboard"] = score_trajectory(ep["history"], ep["ended"])
+        ep["scoreboard_by_year"] = [score_trajectory(ep["history"][:i], ep["ended"] if i == len(ep["history"]) else "running")
+                                    for i in range(1, len(ep["history"]) + 1)]
         if judge:
             from judge.judge import judge_episode
 
