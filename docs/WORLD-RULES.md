@@ -315,6 +315,14 @@ Where the lesson has a measurable prediction and was applied, the prediction is 
 and overrides the model's verdict. Confidence arithmetic stays in code. Lessons with no
 measurable prediction are rejected at write time.
 
+### Balance call I made alone [wage 3.0 -> 3.5, services_cost 200 -> 150, 2026-09-12 ~15:50]
+
+With land and absorption on, a mayor who funded services every third year and built a park now
+and then ended 1,590 in the red and scored below doing nothing. Revenue (405) equalled upkeep
+(410), so every spend was a deficit. I raised the taxable wage to 3.5 (revenue 472, about 60 a
+year of slack) and cut services to 150 per level. Revert or change in `sim/params.py` if you
+disagree; the test `test_do_nothing_scores_below_a_reasonable_mayor` is the guard.
+
 ---
 
 ## What would refute this design

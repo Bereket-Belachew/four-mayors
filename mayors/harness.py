@@ -34,8 +34,13 @@ def load_config(name: str) -> dict[str, Any]:
 def _levers_doc() -> str:
     lines = []
     for n, spec in WORLD_LEVERS.items():
+        if spec["range"] is None:
+            lines.append(f"- {n}({spec['arg']}: factory|park|housing) frees the land it stood on; a demolished factory takes its jobs")
+            continue
         lo, hi = spec["range"]
         lines.append(f"- {n}({spec['arg']}: {lo}..{hi}) cost {spec['cost']}/unit, takes effect in {spec['delay']} year(s)")
+    lines.append("- Land is finite: a factory takes 2 lots, a park 1, every 100 housing units 1. lots_free is in the state. "
+                 "A build with no land is refused.")
     return "\n".join(lines)
 
 

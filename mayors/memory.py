@@ -245,8 +245,12 @@ def memory_write(mem: Memory, history: list[dict[str, Any]],
             rejected.append(f"duplicate: {l.rule[:60]}")
             continue
         if len(mem.lessons) >= MAX_LESSONS:
-            rejected.append(f"memory full: {l.rule[:60]}")
-            continue
+            weakest = min(mem.lessons, key=lambda x: x.confidence)
+            if weakest.confidence >= l.confidence:
+                rejected.append(f"memory full, not stronger than weakest ({weakest.confidence}): {l.rule[:60]}")
+                continue
+            mem.lessons.remove(weakest)
+            rejected.append(f"replaced weakest ({weakest.confidence}): {weakest.rule[:60]}")
         mem.lessons.append(l)
         added.append(l.rule)
     return {"policy": mem.policy, "approval": round(approval, 2), "checked": verdicts, "added": added,

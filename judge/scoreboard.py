@@ -43,8 +43,11 @@ def score_trajectory(history: list[dict[str, Any]], ended: str) -> dict[str, flo
         fiscal -= 3
     if last["debt"] > 0 and jobs_trend <= 0 and last["housing"] <= first["housing"]:
         fiscal -= 2  # borrowed for nothing
-    if last["treasury"] > 3000 and last["services"] < 20:
-        fiscal -= 2  # hoarding
+    # hoarding: a large surplus while something the money could fix is getting worse
+    declining = (last["pollution"] > first["pollution"] + 5) or (last["happiness"] < first["happiness"] - 3) \
+        or (last["services"] < 30)
+    if last["treasury"] > 3000 and declining:
+        fiscal -= 2 + min(3, (last["treasury"] - 3000) / 5000)
     fiscal = _clamp10(fiscal)
 
     # 4 environment: pollution trend

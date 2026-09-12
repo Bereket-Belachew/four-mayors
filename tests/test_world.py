@@ -26,7 +26,9 @@ def _random_script(rng: random.Random, years: int = HORIZON_YEARS) -> list[list[
         year = []
         for _ in range(rng.randint(0, 4)):  # sometimes over the 3-action limit on purpose
             n = rng.choice(names)
-            if n in WORLD_LEVERS:
+            if n in WORLD_LEVERS and WORLD_LEVERS[n]["range"] is None:
+                year.append(Action(n, {WORLD_LEVERS[n]["arg"]: rng.choice(["factory", "park", "housing", "bogus"])}))
+            elif n in WORLD_LEVERS:
                 spec = WORLD_LEVERS[n]
                 lo, hi = spec["range"]
                 v = rng.uniform(lo * 0.5, hi * 1.5)  # sometimes out of range on purpose
@@ -86,7 +88,7 @@ def test_every_event_carries_a_cause():
             assert e["cause_action"] and e["cause_year"] >= 1
             assert e["variable"] in {"population", "housing", "jobs", "treasury", "pollution",
                                      "happiness", "services", "tax_rate", "transit", "factories",
-                                     "parks", "debt"}
+                                     "parks", "debt", "lots"}
 
 
 def test_delayed_consequence_lands_later_with_original_cause():
@@ -118,3 +120,25 @@ def test_loop_actions_are_deterministic_and_do_not_change_the_city():
     for k in ("population", "housing", "jobs", "pollution", "happiness", "services"):
         assert r1["state"][k] == plain["state"][k]
     assert r1["state"]["treasury"] < plain["state"]["treasury"]
+
+
+def test_land_is_finite_and_refuses_when_full():
+    w = new_world(2)
+    p = w.params
+    assert p.land_enabled
+    free0 = w.state.lots_free(p)
+    # order more factories than the land can hold, over several years
+    for _ in range(30):
+        if w.ended:
+            break
+        step(w, [Action("build_factory", {"count": 3}), Action("borrow", {"amount": 2000})])
+    refused = [i for y in w.history for i in y["ignored"] if "lots" in i["why"]]
+    assert refused, "land never bound"
+    assert w.state.lots_free(p) >= 0
+    assert w.state.lots_used(p) <= p.lots_total + w.state.lots_extra
+
+
+def test_parks_cannot_zero_pollution_against_factories():
+    w = run_script(0, [[Action("build_park", {"count": 3})] for _ in range(4)])
+    assert w.state.parks >= 10
+    assert w.state.pollution > 0

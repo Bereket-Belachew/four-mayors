@@ -35,7 +35,7 @@ class Params:
     workforce_share: float = 0.60      # share of population that can work
 
     # ---- money ------------------------------------------------------------------
-    wage: float = 3.0                  # taxable money per job per year; revenue = tax * jobs * wage
+    wage: float = 3.5                  # taxable money per job per year; revenue = tax * jobs * wage (3.0 -> 3.5 on 2026-09-12 ~15:50: at 3.0 the starting city had zero fiscal slack, so ANY spending was a deficit)
     upkeep_per_head: float = 0.25
     transit_upkeep: float = 40.0       # per level per year
     factory_upkeep: float = 20.0       # per factory per year
@@ -57,7 +57,7 @@ class Params:
     transit_cost: float = 150.0        # per level
     transit_delay: int = 2
     transit_range: tuple[float, float] = (0, 3)
-    services_cost: float = 200.0       # per level
+    services_cost: float = 150.0       # per level (200 -> 150, same reason)
     services_delay: int = 0
     services_range: tuple[float, float] = (0, 3)
     services_gain: float = 12.0        # points per level
@@ -88,13 +88,13 @@ class Params:
     park_cleans: float = 1.5           # per park per year (fixed mode)
     transit_cleans: float = 1.0        # per level per year
     pollution_noise: float = 1.0
-    park_mode: str = "fixed"           # "fixed" (subtract park_cleans each) | "absorb" (share of ambient, diminishing)
+    park_mode: str = "absorb"          # "fixed" (subtract park_cleans each) | "absorb" (share of ambient, diminishing)
     park_absorb_first: float = 0.12    # absorb mode: share of ambient pollution the first park removes per year
     park_absorb_decay: float = 0.80    # each additional park absorbs this fraction of the previous one's share
-    population_smoke: float = 0.0      # per 1000 people per year (0 keeps old behavior; try 1.0)
+    population_smoke: float = 1.0      # per 1000 people per year (0 = old behavior)
 
     # ---- land ---------------------------------------------------------------------
-    land_enabled: bool = False
+    land_enabled: bool = True          # decided 2026-09-12 ~15:45 after a 52-park city
     lots_total: int = 81               # 12x12 grid minus roads
     lots_per_factory: int = 2
     lots_per_park: int = 1
