@@ -19,3 +19,5 @@ Level 2 under n4 (y=240, 300x90, fill #fce7f3): n41 3458764683526205392 (x=3880)
 Level 2 complete. Level 3 rows start at y=440 (boxes 260x90), under the parent's x.
 Level 3 under n11: vertical stack x=-960, 300x70, y=440,540,...,940: n111 3458764683526753405 · n112 ...406 · n113 ...407 · n114 ...408 · n115 ...409 · n116 ...410; connectors ...413-418. Vocab sticky ...411 at (-1400,440).
 n33 text updated (models decided). Level 4 under n111 goes to the right of the stack: x=-620, y=440.., 260x60.
+State table (1.1.1) 3458764683527024352 at (-600,380), rendered 791x606 -> occupies x -600..191, y 380..986. Connector ...353.
+n12 children: place at x=250.., y=440 (right of the table) or below y=1050.
