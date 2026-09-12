@@ -58,6 +58,7 @@
     { id: "worker", face: "👩‍🏭", name: "Ama, factory worker", blurb: "single parent, ten-year-old" },
     { id: "mayor", face: "🎩", name: "The Mayor", blurb: "will explain himself" },
     { id: "industrialist", face: "🏭", name: "Bram, industrialist", blurb: "owns the factories" },
+    { id: "environmentalist", face: "🌿", name: "Dr. Nadia, environmentalist", blurb: "lives downwind, counts smog days" },
     { id: "shopkeeper", face: "🛒", name: "Rosa, shopkeeper", blurb: "corner shop by the main road" },
   ];
   let selected = "worker";
