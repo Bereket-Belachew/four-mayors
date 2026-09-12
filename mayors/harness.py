@@ -132,14 +132,14 @@ class Mayor:
 
     # ----- one term ------------------------------------------------------------
     @weave.op()
-    def serve_term(self, seed: int, term_index: int) -> dict[str, Any]:
-        world = new_world(seed)
+    def serve_term(self, seed: int, term_index: int, scenario: str | None = None, params=None) -> dict[str, Any]:
+        world = new_world(seed, scenario, params)
         memory_text = memory_read(self.memory)
         pending_loop_results: list[dict[str, Any]] = []
         tool_use: dict[str, int] = {}
         reasonings: list[str] = []
         while world.ended is None:
-            decision = self.decide_year(world.state.public(), world.history, pending_loop_results, memory_text)
+            decision = self.decide_year(world.state.public(world.params), world.history, pending_loop_results, memory_text)
             for a in decision["actions"]:
                 tool_use[a.name] = tool_use.get(a.name, 0) + 1
             rec = step(world, decision["actions"])
@@ -152,9 +152,10 @@ class Mayor:
             "mayor": self.name,
             "seed": seed,
             "term": term_index,
+            "scenario": world.scenario,
             "ended": world.ended,
             "years": len(world.history),
-            "final_state": world.state.public(),
+            "final_state": world.state.public(world.params),
             "history": world.history,
             "tool_use": tool_use,
             "memory_before": memory_before,

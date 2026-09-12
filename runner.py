@@ -62,15 +62,17 @@ def _shuffle_lessons(mayor: Mayor, seed: int) -> None:
         l.rule = r
 
 
-def run_mayor(name: str, seed: int, terms: int, judge: bool, shuffled: bool) -> list[dict[str, Any]]:
+def run_mayor(name: str, seed: int, terms: int, judge: bool, shuffled: bool,
+              scenario: str | None = None, params=None) -> list[dict[str, Any]]:
     label = name + ("_shuffled" if shuffled else "")
     mayor = Mayor(name, LLM(LLMConfig()))
     out = []
     for t in range(terms):
         if shuffled:
             _shuffle_lessons(mayor, seed)
-        ep = mayor.serve_term(seed, t)
+        ep = mayor.serve_term(seed, t, scenario, params)
         ep["mayor"] = label
+        ep["param_overrides"] = {k: getattr(params, k) for k in vars(params)} if params else {}
         ep["scoreboard"] = score_trajectory(ep["history"], ep["ended"])
         if judge:
             from judge.judge import judge_episode
@@ -132,7 +134,28 @@ def main() -> None:
     ap.add_argument("--controls", action="store_true", help="write runs/controls/*.json")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--no-weave", action="store_true")
+    ap.add_argument("--hard-starts", action="store_true",
+                    help="each seed opens on a different crisis (sim/params.py SCENARIOS)")
+    ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
+                    help="override a sim parameter, e.g. --set park_mode=absorb --set land_enabled=true")
     args = ap.parse_args()
+    from sim.params import DEFAULT
+    overrides = {}
+    for kv in args.set:
+        k, v = kv.split("=", 1)
+        cur = getattr(DEFAULT, k)
+        if isinstance(cur, bool):
+            v = v.lower() in ("1", "true", "yes")
+        elif isinstance(cur, int):
+            v = int(v)
+        elif isinstance(cur, float):
+            v = float(v)
+        overrides[k] = v
+    params = DEFAULT.with_(**overrides) if overrides else None
+    if overrides:
+        print("param overrides:", overrides)
+    from sim.params import scenario_for
+    scen = (lambda s: scenario_for(s)) if args.hard_starts else (lambda s: None)
 
     if not args.no_weave:
         weave.init(os.getenv("WEAVE_PROJECT", "coreweave-hacks"))
@@ -150,7 +173,7 @@ def main() -> None:
 
     episodes: list[dict[str, Any]] = []
     with RUNS_FILE.open("a") as f, ThreadPoolExecutor(max_workers=args.workers) as ex:
-        futs = {ex.submit(run_mayor, m, s, args.terms, args.judge, sh): (m, s, sh) for m, s, sh in jobs}
+        futs = {ex.submit(run_mayor, m, s, args.terms, args.judge, sh, scen(s), params): (m, s, sh) for m, s, sh in jobs}
         for fut in as_completed(futs):
             m, s, sh = futs[fut]
             try:
@@ -163,7 +186,7 @@ def main() -> None:
                 f.flush()
                 episodes.append(ep)
                 fs = ep["final_state"]
-                print(f"{ep['mayor']:<18} seed {s} term {ep['term']}: {ep['ended']:<12} score {ep['scoreboard']['total']:>5.1f} "
+                print(f"{ep['mayor']:<18} seed {s} [{ep.get('scenario','default')}] term {ep['term']}: {ep['ended']:<12} score {ep['scoreboard']['total']:>5.1f} "
                       f"| pop {fs['population']} jobs {fs['jobs']} $ {fs['treasury']} pol {fs['pollution']} happy {fs['happiness']}")
 
     # include earlier lines for the report
