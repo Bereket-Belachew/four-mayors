@@ -6,7 +6,7 @@
 Not "finish the task" - the actual outcome the task is a proxy for.
 Everything below exists to make this line true. -->
 
-**...**
+**Win the hackathon.** (his words, 2026-09-12)
 
 ## Decomposition
 
@@ -14,28 +14,15 @@ Everything below exists to make this line true. -->
 Leaves are concrete and checkable. Mark leaves [ ] / [x] / TBD.
 Tag anything uncertain with TBD: rather than silently guessing. -->
 
-### 1. <subgoal - one branch of the tree>
+### 1. Build a project that is technically impressive
 
-- [ ] leaf: concrete, checkable
-- [ ] leaf:
-- TBD: open question, and what I assumed to keep moving
+### 2. Build a project that is visually appealing even for a non-technical audience
 
-### 2. <subgoal>
+### 3. Build a project that uses the sponsor platforms
 
-- [ ] leaf:
-- [ ] leaf:
+<!-- Level 1 agreed 2026-09-12 ~10:00. Next level proposed, not yet agreed. -->
 
-### 3. It does not break
-<!-- Edge cases live here as leaves, not in a separate section.
-Empty/null input, boundaries, duplicates, concurrency, large input. -->
-
-- [ ] leaf:
-
-### 4. It cannot be abused
-<!-- Security as a branch: untrusted input, authz, injection, secrets,
-errors that leak internals. "Not applicable because X" is a real leaf. -->
-
-- [ ] leaf:
+- TBD: tickets live in PLAN.md + git for now; Linear workspace choice pending (only team is Fana AI).
 
 ## Commit map
 
