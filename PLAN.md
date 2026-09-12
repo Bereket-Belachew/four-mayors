@@ -37,6 +37,19 @@ Vocabulary: **step** = one year. **Episode** = one term of office (~20 years). O
 - 1.1.6 An episode has a defined end: 20-year horizon, or early exit on bankruptcy, depopulation, or revolt (happiness below floor for 3 years). End state + trajectory both go to the judge.
 - Presentation time ≠ compute time: episodes are recorded and replayed at ~10s/step; only the human plays live. Recordings are the demo fallback.
 #### 1.2 Mayors that differ only in how they close the loop (same model, same seed; human is the fifth)
+
+Inner loop (within a term) is IDENTICAL for all mayors: each year sees state + this term's own history + whatever it consulted, then acts. Outer loop (between terms) is the experiment. Caesar proves the inner loop alone is not enough.
+
+- 1.2.1 One harness, four configs (same prompt skeleton, model, world levers; mayors are config files)
+- 1.2.2 A feedback source per mayor, structural not stylistic:
+  - Caesar: nothing between terms (control)
+  - Bureaucrat: opinions, never outcomes. Raw output of loop actions (referenda, consultant reports, council minutes) appended forever. Consultants have fixed, deterministic biases so they contradict. No outcome attribution -> paralysis by construction.
+  - Reformer: outcomes, distilled. Reads the world's cause-tagged consequence log (1.1.4), writes <=7 lessons in a fixed shape {when state looked like X, did Y, Z happened, rule R, seen N}. Each lesson is checked next term against what happened; wrong -> confidence down or deleted. Bounded + falsifiable.
+  - Populist: Reformer's mechanism, but lessons are checked mostly against citizen approval, ~2:1 over outcomes; a couple of slots stay outcome-anchored so it never fully abandons what worked. Ratio is a dial.
+- 1.2.3 A loop-action toolset per mayor; usage may shift across terms (Reformer can learn to drop a biased consultant)
+- 1.2.4 Four characters, costumed but not coached (persona text carries no strategy)
+- 1.2.5 The human mayor: same levers, same world, own pace, scored identically, no memory machinery
+- TBD: divergence is empirical. First Saturday test: 3 terms each on one seed. If Bureaucrat and Reformer converge, dials are log size, consultant count, consultant bias. (Leaf under 4.1.)
 #### 1.3 A hidden rubric and a judge that never leaks into the mayors
 #### 1.4 Proof it improves (several runs per mayor, variance shown, one visible self-catch)
 
