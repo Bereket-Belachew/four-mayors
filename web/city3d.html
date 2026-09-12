@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Four Mayors · 3D</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --ink:#e8e8ea; --muted:#9aa0aa; --line:#2a2f3a; --good:#4ade80; --bad:#f87171; --warn:#fbbf24; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; display:grid; grid-template-rows:auto 1fr; grid-template-columns:1fr 340px; height:100vh; overflow:hidden; }
+  header { grid-column:1 / -1; display:flex; gap:12px; align-items:center; padding:8px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0 8px 0 0; font-weight:600; }
+  select, button, input[type=range] { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
+  button { cursor:pointer; } button.primary { background:#2563eb; border-color:#2563eb; } button.sel { border-color:#2563eb; background:#1b2436; }
+  .tabs { display:flex; gap:6px; }
+  .tab { padding:5px 10px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--muted); font-size:13px; }
+  .tab.sel { color:var(--ink); border-color:#2563eb; background:#1b2436; }
+  .tab .sc { color:var(--warn); margin-left:6px; font-variant-numeric:tabular-nums; }
+  #year { font-variant-numeric:tabular-nums; min-width:100px; color:var(--muted); }
+  #game { position:relative; overflow:hidden; background:#0b0d12; }
+  #game canvas { display:block; }
+  #hint { position:absolute; left:12px; bottom:10px; color:var(--muted); font-size:12px; background:rgba(15,17,21,.7); padding:4px 8px; border-radius:6px; pointer-events:none; }
+  #talk { position:absolute; display:none; transform:translate(-50%,-100%); background:#111318; border:1px solid #2563eb; color:var(--ink); border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; text-align:center; z-index:5; }
+  #talk small { display:block; color:var(--muted); font-size:11px; }
+  #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); background:rgba(11,13,18,.85); z-index:6; }
+  aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+  aside h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
+  aside h2 .score { color:var(--warn); font-variant-numeric:tabular-nums; }
+  .decision { font-size:12px; background:#1f2937; border-radius:6px; padding:6px 8px; min-height:34px; }
+  .health { display:grid; gap:4px; font-size:11px; color:var(--muted); }
+  .hb { display:grid; grid-template-columns:70px 1fr 34px; align-items:center; gap:6px; }
+  .hb.total { color:var(--ink); }
+  .ht { height:8px; background:#0b0d12; border-radius:4px; overflow:hidden; }
+  .hf { display:block; height:100%; transition:width .6s ease; }
+  .hv { text-align:right; font-variant-numeric:tabular-nums; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:3px 8px; font-size:12px; color:var(--muted); }
+  .stats b { color:var(--ink); font-weight:500; }
+  .ticker { font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:6px; }
+  .ticker .ev { display:block; } .ticker .up { color:var(--good); } .ticker .down { color:var(--bad); }
+  .lessons { font-size:12px; border-top:1px solid var(--line); padding-top:6px; }
+  .lessons .l { display:block; padding:2px 0; } .lessons .failed { color:var(--bad); text-decoration:line-through; } .lessons .held { color:var(--good); }
+  .fuse { font-size:12px; color:var(--warn); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Four Mayors</h1>
+  <label style="color:var(--muted)">seed <select id="seed"></select></label>
+  <label style="color:var(--muted)">term <select id="term"></select></label>
+  <div class="tabs" id="tabs"></div>
+  <button id="play" class="primary">▶ play</button>
+  <button id="step">step</button>
+  <button id="freeze">❄ freeze &amp; ask</button>
+  <button id="camOrbit" class="sel" title="outside view">🛰 city</button>
+  <button id="camStreet" title="inside view">🚶 street</button>
+  <label style="color:var(--muted)">speed <input id="speed" type="range" min="1" max="10" value="4" /></label>
+  <input id="scrub" type="range" min="0" max="20" value="0" style="flex:1;min-width:140px" />
+  <span id="year">year 0 / 20</span>
+  <a href="iso.html" style="color:var(--muted);font-size:12px">isometric</a>
+  <a href="index.html" style="color:var(--muted);font-size:12px">four-up</a>
+</header>
+<div id="game">
+  <div id="loading">loading the city…</div>
+  <div id="talk">💬 talk<small id="talkLabel"></small></div>
+  <div id="hint">drag to orbit · wheel to zoom · hover a building to talk · street view: WASD to walk, drag to look</div>
+</div>
+<aside>
+  <h2><span id="mayorName">—</span><span class="score" id="score"></span></h2>
+  <div class="decision" id="decision">load runs…</div>
+  <div class="health" id="health"></div>
+  <div class="fuse" id="fuse"></div>
+  <div class="stats" id="stats"></div>
+  <div class="ticker" id="ticker"></div>
+  <div class="lessons" id="lessons"></div>
+</aside>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module" src="city3d.js"></script>
+<script src="narrator.js"></script>
+</body>
+</html>
