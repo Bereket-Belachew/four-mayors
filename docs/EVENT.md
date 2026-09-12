@@ -46,3 +46,13 @@ AGI House (strategic) · TypeSafe AI (machine-native models).
 ## Onboarding checklist (from organizer blasts)
 handbook (Notion) · Discord · W&B account · API request form (TypeSafe + W&B) · AGI House
 platform sign-in (required to submit).
+
+## From the participant handbook (read 2026-09-12 ~14:20)
+- **W&B is REQUIRED** to build and for prize eligibility ("2 lines of code"). Include the W&B project link in the submission; project may stay private.
+- **Judging criteria (verbatim headings):** Best Loop (self-correcting? improving at each pass?) · Creativity ("does the project meaningfully show a team of agents working well together?") · Utility (useful? real problem?) · Technical execution (works? reasonable architecture?) · Sponsor usage (meaningful use of one or more sponsor tools). Most Production-Ready awarded 2 weeks later at Fully Connected.
+- **Judging mechanics:** 13:30 preliminary round in back rooms, **3 minutes strictly**, optional 2 min Q&A, at most 1-2 slides, heavy on demo. 8 finalists present live to everyone. Need Zoom (share.zoom.us) for screen share.
+- **Submission (AGI House platform):** every member signed in + participant survey done; public GitHub repo; team name; all members; **screen-recording demo < 2 min**; X/LinkedIn handles; 2-3 sentence summary incl. what makes the loop self-improving; how it's built (frameworks, protocols like MCP/A2A); **a list of every sponsor tool and how used** (critical for sponsor AND grand prizes); track selection: Best Use of Weave / ARIA / marimo.
+- **Eligibility:** entire project built at the hackathon; primarily your own work; AI coding fair game; must be present Saturday.
+- **Credits:** $100 W&B Inference credits via form + talk to Anna or Lorenzo (yellow bomber jackets). More on request. wandb.me/inference
+- **Resources:** W&B MCP server (analyze runs/traces, create reports from a coding agent); Weavify skill `npx add-skill altryne/weavify-skill`; Weave docs https://weave-docs.wandb.ai/ ; ARIA docs https://docs.wandb.ai/aria/overview ; molab free GPUs; sponsor engineers onsite at table signs.
+- **Advice from organizers:** commit early and often (signals weekend work); post on social media right after; use sponsor engineers.
