@@ -81,5 +81,5 @@
       msg.textContent = `running ${mayors.length * seeds.length} mayor×city job(s), ${terms} term(s) each`;
     } catch (e) { msg.textContent = `could not start: ${e.message}. Is ask_server.py running?`; }
   };
-  setTimeout(() => refreshFiles(), 800);
+  setTimeout(() => refreshFiles(), 800); setTimeout(() => refreshFiles(), 3000);
 })();
