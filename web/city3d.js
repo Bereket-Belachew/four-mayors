@@ -77,7 +77,14 @@ const MODELS = {
   light: KIT.road + "light-square.glb",
   barrier: KIT.road + "construction-barrier.glb",
   hall: KIT.com + "building-skyscraper-a.glb",
+  cone: KIT.road + "construction-cone.glb",
+  dumpster: KIT.road + "dumpster.glb",
+  container: ["a", "b", "c"].map(x => KIT.ind + `shipping-container-${x}.glb`),
+  billboard: KIT.road + "sign-highway-wide.glb",
+  person: "abcdefghijklmnopqr".split("").map(x => K + `kenney_blocky-characters/Models/GLB format/character-${x}.glb`),
 };
+const distressGroup = new THREE.Group();
+const distressMixers = [];
 const loader = new GLTFLoader();
 const cache = new Map();
 function loadModel(url) {
@@ -127,6 +134,7 @@ const grassMat = new THREE.MeshStandardMaterial({ color: 0x7fa650 }), dirtMat = 
 const cityGroup = new THREE.Group(); scene.add(cityGroup);
 const carGroup = new THREE.Group(); scene.add(carGroup);
 const smokeGroup = new THREE.Group(); scene.add(smokeGroup);
+scene.add(distressGroup);
 const smokeTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); const rg = g.createRadialGradient(32, 32, 4, 32, 32, 30); rg.addColorStop(0, "rgba(200,200,200,0.9)"); rg.addColorStop(1, "rgba(200,200,200,0)"); g.fillStyle = rg; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
 
 function resize() { const w = game.clientWidth, h = game.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -142,6 +150,52 @@ function roadFor(kinds, r, c) {
   if (e && w) return [MODELS.road.straight, Math.PI / 2];
   if (n && e) return [MODELS.road.bend, 0]; if (e && s) return [MODELS.road.bend, -Math.PI / 2]; if (s && w) return [MODELS.road.bend, Math.PI]; if (w && n) return [MODELS.road.bend, Math.PI / 2];
   return [MODELS.road.end, n ? 0 : e ? Math.PI / 2 : s ? Math.PI : -Math.PI / 2];
+}
+
+function textSprite(text, color = "#ffffff", bg = "rgba(120,10,10,0.92)") {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 128; const g = c.getContext("2d");
+  g.fillStyle = bg; g.fillRect(0, 0, 512, 128); g.fillStyle = color; g.font = "bold 64px ui-monospace, Menlo, monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 256, 64);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true })); sp.scale.set(2.4, 0.6, 1); return sp;
+}
+// Every one of the seven numbers owns something you can see when it goes bad.
+async function distress(s, sb, kinds) {
+  while (distressGroup.children.length) distressGroup.remove(distressGroup.children[0]);
+  distressMixers.length = 0;
+  const roads = [], empties = [], lots = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const k = kinds[r * N + c]; if (k === "road") roads.push([r, c]); else if (k === "empty") empties.push([r, c]); else if (k !== "hall") lots.push([r, c]); }
+  const pickN = (arr, n, salt) => arr.filter((_, i) => hash(i, salt) % Math.max(1, Math.round(arr.length / Math.max(n, 1))) === 0).slice(0, n);
+  const jobs = [];
+  // money: negative treasury / heavy debt -> barriers, cones, a debt billboard at the edge
+  const moneyBad = s.treasury < 0 || s.debt > 3000;
+  if (moneyBad) {
+    const sev = Math.min(1, (Math.max(0, -s.treasury) + Math.max(0, s.debt - 3000)) / 6000);
+    for (const [r, c] of pickN(roads, Math.round(3 + sev * 9), 21)) jobs.push(place(hash(r * N + c, 2) % 2 ? MODELS.barrier : MODELS.cone, c + 0.25, r + 0.15, { fit: 0.35 }).then(o => distressGroup.add(o)));
+    jobs.push(place(MODELS.billboard, N + 0.6, N / 2, { fit: 1.6, rotY: -Math.PI / 2 }).then(o => { distressGroup.add(o); const t = textSprite(`DEBT ${Math.round(s.debt).toLocaleString()}`); t.position.set(N + 0.6, 1.9, N / 2); distressGroup.add(t); }));
+  }
+  // services low -> dumpsters on lot corners
+  if (s.services < 30) for (const [r, c] of pickN(lots, Math.round(4 + (30 - s.services) / 4), 22)) jobs.push(place(MODELS.dumpster, c + 0.42, r + 0.42, { fit: 0.22 }).then(o => distressGroup.add(o)));
+  // jobless -> shipping-container shanties on empty lots
+  if ((s.unemployment || 0) > 0.15) for (const [r, c] of pickN(empties, Math.round(2 + s.unemployment * 12), 23)) jobs.push(place(pick(MODELS.container, r * N + c, 3), c, r, { fit: 0.55 }).then(o => distressGroup.add(o)));
+  // unhappy -> a standing protest outside city hall
+  if (s.happiness < 45) {
+    const n = Math.round(4 + (45 - s.happiness) / 4);
+    for (let i = 0; i < n; i++) jobs.push(loadModel(MODELS.person[i % MODELS.person.length]).then(m => {
+      const o = m.root.clone(true); o.scale.setScalar(0.28 / Math.max(m.size.y, 0.01));
+      const a = (i / n) * Math.PI * 1.2 - Math.PI * 0.1; o.position.set(5 + Math.cos(a) * (0.8 + (i % 2) * 0.25), 0, 5 + 0.7 + Math.sin(a) * 0.5); o.lookAt(5, 0, 5);
+      const mx = new THREE.AnimationMixer(o); const clip = m.animations.find(x => x.name === (i % 3 ? "emote-no" : "idle")) || m.animations[0]; mx.clipAction(clip).play(); distressMixers.push(mx);
+      distressGroup.add(o);
+    }));
+  }
+  await Promise.all(jobs);
+  // pollution -> trees brown, grass yellow. score -> light: golden when thriving, flat when failing.
+  const pol = Math.min(1, Math.max(0, (s.pollution - 30) / 60));
+  grassMat.color.setHex(0x7fa650).lerp(new THREE.Color(0xa8a05a), pol);
+  ground.material.color.setHex(0x6e8a4a).lerp(new THREE.Color(0x8f8a55), pol);
+  cityGroup.traverse(o => { if (o.isMesh && o.userData.isTree) { if (!o.userData.baseColor) o.userData.baseColor = o.material.color.clone(); o.material = o.material.clone(); o.material.color.copy(o.userData.baseColor).lerp(new THREE.Color(0x7a5a2a), pol * 0.8); } });
+  const score = sb ? sb.total / 60 : 0.6;
+  const thriving = Math.min(1, Math.max(0, (score - 0.45) / 0.35)), failing = Math.min(1, Math.max(0, (0.5 - score) / 0.3));
+  sun.color.setHex(0xfff3e0).lerp(new THREE.Color(0xffc27a), thriving).lerp(new THREE.Color(0xbfc4cc), failing);
+  sun.intensity = 1.6 + 0.5 * thriving - 0.9 * failing; hemi.intensity = 0.9 - 0.3 * failing;
 }
 
 let buildToken = 0, lotMeta = new Map(), prevKinds = null, currentTier = 3;
@@ -165,7 +219,7 @@ async function rebuild(full = false) {
       const tile = (mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.08, 1), mat); m.position.set(x, 0.04, z); m.receiveShadow = true; m.userData.ownGeom = true; return m; };
       if (kind === "road") { const [url, rot] = roadFor(kinds, r, c); obj = await place(url, x, z, { fit: 1.0, rotY: rot }); }
       else if (kind === "empty") { obj = tile(hash(i, 3) % 3 ? grassMat : dirtMat); }
-      else if (kind === "park") { obj = new THREE.Group(); obj.add(tile(grassMat)); for (let k = 0; k < 3; k++) { const t = await place(pick(MODELS.tree, i, k), x + ((hash(i, k) % 60) - 30) / 100, z + ((hash(i, k + 9) % 60) - 30) / 100, { fit: 0.35 + (hash(i, k + 3) % 20) / 100 }); obj.add(t); } label = "park"; }
+      else if (kind === "park") { obj = new THREE.Group(); obj.add(tile(grassMat)); for (let k = 0; k < 3; k++) { const t = await place(pick(MODELS.tree, i, k), x + ((hash(i, k) % 60) - 30) / 100, z + ((hash(i, k + 9) % 60) - 30) / 100, { fit: 0.35 + (hash(i, k + 3) % 20) / 100 }); t.traverse(m => { if (m.isMesh) m.userData.isTree = true; }); obj.add(t); } label = "park"; }
       else if (kind === "house") { obj = new THREE.Group(); obj.add(tile(grassMat)); obj.add(await place(pick(MODELS.house, i, 7), x, z, { fit: 0.9, rotY: (hash(i, 1) % 4) * Math.PI / 2 })); label = "a family lives here"; }
       else if (kind === "shack") { obj = new THREE.Group(); obj.add(tile(dirtMat)); obj.add(await place(pick(MODELS.shuttered, i, 7), x, z, { fit: 0.7, maxH: 0.9 })); label = "poor housing"; }
       else if (kind === "shuttered") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.shuttered, i, 8), x, z, { fit: 0.85, maxH: 1.2 })); label = "shuttered"; }
@@ -198,11 +252,13 @@ async function rebuild(full = false) {
   await Promise.all(tasks);
   if (token !== buildToken) return;
   prevKinds = kinds;
+  const sby = ep.scoreboard_by_year || [], sbNow = year > 0 ? sby[Math.min(year, sby.length) - 1] : null;
+  await distress(s, sbNow, kinds);
   // sky and fog by pollution
   const smog = Math.min(1, pollution / 100);
   const sky = new THREE.Color().lerpColors(new THREE.Color(0x87b6d9), new THREE.Color(0xb59a5a), smog);
   scene.background = sky; scene.fog.color = sky; scene.fog.near = 30 - 22 * smog; scene.fog.far = 90 - 55 * smog;
-  hemi.intensity = 0.9 - 0.35 * smog; sun.intensity = 1.6 - 0.6 * smog;
+  hemi.intensity = Math.min(hemi.intensity, 0.9 - 0.35 * smog); sun.intensity = Math.min(sun.intensity, 1.6 - 0.6 * smog);
   $("loading").style.display = "none";
 }
 
@@ -255,6 +311,7 @@ const clock = new THREE.Clock();
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (cinema) cinema.update(dt);
+  for (const m of distressMixers) m.update(dt);
   if (mode === "orbit" && !(cinema && cinema.playing)) orbit.update();
   else if (mode === "street") {
     const f = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), rgt = new THREE.Vector3(f.z, 0, -f.x); const sp = 3 * dt;
