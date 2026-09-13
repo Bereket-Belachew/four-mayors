@@ -163,6 +163,7 @@ export function showCallout(c) {
     el.style.left = `${x}px`; el.style.top = `${y}px`;
     requestAnimationFrame(() => el.classList.add("in"));
     playSfx(c.sfx);
+    if (window.voiceOn && window.speak) window.speak(`${c.title}. ${String(c.text).split(/(?<=\.)\s/)[0]}`);
     if (c.play) stagePlay(c).catch(e => console.warn("callout play failed", e));
     setTimeout(() => { el.classList.remove("in"); setTimeout(() => remove(item), 400); }, c.duration || DURATION);
   });

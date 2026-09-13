@@ -4,6 +4,7 @@ GET  /runs            list run files under runs/
 POST /run             start a sweep in a background thread: {mayors, seeds, terms, hard_starts, label}
 GET  /status?id=...   progress of a job (per mayor x seed: term, year, key numbers), done episodes, errors
 GET  /jobs            all jobs this session
+POST /tts             {text, voice?} -> {url}: narrator line as a cached mp3 under runs/audio/
 
 The page is static and must never hold an API key, so this process does the model call.
 POST /ask  {"character": "worker|mayor|industrialist|shopkeeper", "question": "...",
@@ -169,6 +170,30 @@ def start_run(spec: dict[str, Any]) -> str:
     return job_id
 
 
+AUDIO_DIR = RUNS_DIR / "audio"
+TTS_MODEL = os.getenv("TTS_MODEL", "gpt-4o-mini-tts")
+TTS_VOICE = os.getenv("TTS_VOICE", "fable")
+_tts_client = None
+
+
+def tts(text: str, voice: str = TTS_VOICE) -> str | None:
+    """Return a path (relative to the repo root) to a cached mp3 for this line, generating it once."""
+    import hashlib
+    global _tts_client
+    text = " ".join(text.split())[:600]
+    if not text:
+        return None
+    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    key = hashlib.sha1(f"{TTS_MODEL}|{voice}|{text}".encode()).hexdigest()[:20]
+    out = AUDIO_DIR / f"{key}.mp3"
+    if not out.exists():
+        from openai import OpenAI
+        _tts_client = _tts_client or OpenAI()
+        r = _tts_client.audio.speech.create(model=TTS_MODEL, voice=voice, input=text, response_format="mp3")
+        out.write_bytes(r.content if hasattr(r, "content") else r.read())
+    return f"runs/audio/{out.name}"
+
+
 def list_runs() -> list[dict[str, Any]]:
     out = []
     for f in sorted(RUNS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True):
@@ -213,6 +238,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         n = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(n) or b"{}"
+        if self.path == "/tts":
+            try:
+                payload = json.loads(raw)
+                path = tts(str(payload.get("text", "")), str(payload.get("voice", TTS_VOICE)))
+                return self._json({"url": path})
+            except Exception as e:
+                return self._json({"url": None, "error": str(e)}, 200)
         if self.path == "/run":
             try:
                 jid = start_run(json.loads(raw))

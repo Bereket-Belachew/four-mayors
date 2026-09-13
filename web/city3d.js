@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789276461";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789276461";
-import { initHero, setHero } from "./hero.js?v=1789276461";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789276843";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789276843";
+import { initHero, setHero } from "./hero.js?v=1789276843";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -349,7 +349,8 @@ function setMode(m) {
 }
 $("camOrbit").onclick = () => setMode("orbit"); $("camStreet").onclick = () => setMode("street");
 const sndBtn = document.createElement("button"); sndBtn.id = "sndBtn"; sndBtn.textContent = "🔇"; sndBtn.title = "sound effects (off by default)"; $("togPanel").after(sndBtn);
-sndBtn.onclick = () => { setAudio(!audioEnabled()); sndBtn.textContent = audioEnabled() ? "🔊" : "🔇"; if (audioEnabled()) playSfx("chime"); };
+sndBtn.title = "narrator voice + sound effects (off by default)";
+sndBtn.onclick = () => { setAudio(!audioEnabled()); window.voiceOn = audioEnabled(); sndBtn.textContent = audioEnabled() ? "🔊" : "🔇"; if (audioEnabled()) { playSfx("chime"); if (ep && window.voicePrefetch) { window.voicePrefetch(openingRecap(ep).lines); for (const r of recaps) window.voicePrefetch([r.title, ...r.lines]); } } else if (window.stopSpeaking) window.stopSpeaking(); };
 const coBtn = document.createElement("button"); coBtn.id = "coBtn"; coBtn.textContent = "🗨 callouts"; coBtn.className = "sel"; coBtn.title = "small windows with a line to the spot, for the smaller moments"; sndBtn.after(coBtn);
 window.calloutsOn = true; coBtn.onclick = () => { window.calloutsOn = !window.calloutsOn; coBtn.classList.toggle("sel", window.calloutsOn); };
 $("togChamber").onclick = () => { document.body.classList.toggle("no-chamber"); setTimeout(resize, 50); };

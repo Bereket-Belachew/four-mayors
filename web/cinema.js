@@ -254,7 +254,8 @@ export class Cinema {
     const linesEl = d.querySelector(".lines"); linesEl.innerHTML = ""; d.querySelector(".cards").innerHTML = ""; d.querySelector(".counter").hidden = true;
     const wasOrbit = orbit.enabled; orbit.enabled = false;
     const camBefore = camera.position.clone(), tgtBefore = orbit.target.clone();
-    d.querySelector(".skip").onclick = () => { this.skipReq = true; };
+    d.querySelector(".skip").onclick = () => { this.skipReq = true; if (window.stopSpeaking) window.stopSpeaking(); };
+    if (window.voicePrefetch) window.voicePrefetch([recap.title, ...recap.lines]);
     const stage = this[`stage_${recap.type}`] || this.stage_quiet;
     try { await stage.call(this, recap, ep, linesEl, d); } catch (e) { console.warn("cinema stage failed", e); }
     await this.wait(1400);
@@ -266,7 +267,13 @@ export class Cinema {
     orbit.enabled = wasOrbit; this.playing = false;
   }
   async wait(ms) { const step = 100; for (let t = 0; t < ms; t += step) { if (this.skipReq) return; await sleep(step); } }
-  async say(linesEl, text, ms = 1700) { if (this.skipReq) return; const p = document.createElement("p"); p.innerHTML = text; linesEl.appendChild(p); await sleep(30); p.classList.add("in"); await this.wait(ms); }
+  async say(linesEl, text, ms = 1700) {
+    if (this.skipReq) return;
+    const p = document.createElement("p"); p.innerHTML = text; linesEl.appendChild(p); await sleep(30); p.classList.add("in");
+    if (window.voiceOn && window.speak) { await Promise.race([window.speak(text), this.skipWatch()]); await this.wait(350); }
+    else await this.wait(ms);
+  }
+  async skipWatch() { while (!this.skipReq) await sleep(120); }
   card(d, cls, k, text) { const c = document.createElement("div"); c.className = `card ${cls}`; c.innerHTML = `<div class="k">${k}</div>${text}`; d.querySelector(".cards").appendChild(c); requestAnimationFrame(() => c.classList.add("in")); return c; }
   counter(d, label, from, to, ms = 2200) { const el = d.querySelector(".counter"); el.hidden = false; const t0 = performance.now(); const tick = () => { const q = Math.min(1, (performance.now() - t0) / ms); el.innerHTML = `<small>${label}</small>${Math.round(from + (to - from) * easeInOut(q)).toLocaleString()}`; if (q < 1 && !this.skipReq) requestAnimationFrame(tick); }; tick(); }
   dimCity(keepXZ, radius = 1.5) {
