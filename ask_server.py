@@ -83,6 +83,75 @@ def _events_text(events: list[dict[str, Any]]) -> str:
     return "\n".join(lines) or "(a quiet year)"
 
 
+def _stakes(who: str, state: dict[str, Any], payload: dict[str, Any]) -> str:
+    """What this person actually lives through, from the numbers. Even a cheerful city has a worried worker if jobs are short."""
+    f = lambda k, d=0.0: float(state.get(k, d) or 0)
+    prev = payload.get("prev_state") or {}
+    pf = lambda k, d=None: (float(prev.get(k)) if prev.get(k) is not None else (d if d is not None else f(k)))
+    events = payload.get("recent_events") or []
+    ended = payload.get("ended")
+    pop, jobs, unemp = f("population"), f("jobs"), f("unemployment") * 100
+    workforce = pop * 0.6
+    tax, pol, serv, tre, debt, happy = f("tax_rate") * 100, f("pollution"), f("services"), f("treasury"), f("debt"), f("happiness")
+    hr = f("housing_ratio", 1.0)
+    recession = any(e.get("cause_action") == "recession" for e in events)
+    factories_opened = sum(1 for e in events if e.get("variable") == "factories" and e.get("delta", 0) > 0)
+    parks_opened = sum(1 for e in events if e.get("variable") == "parks" and e.get("delta", 0) > 0)
+    subsidised = any(e.get("cause_action") == "subsidize_business" and e.get("variable") == "jobs" for e in events)
+    austerity = any("austerity" in (e.get("note") or "") for e in events)
+    dpol = pol - pf("pollution")
+    lines: list[str] = []
+    if ended == "bankruptcy":
+        lines.append("THE CITY HAS JUST GONE BANKRUPT. Wages to city staff are unpaid, pensions are cut, the city's credit is gone. This is the end of the term; the mayor is finished.")
+    elif ended == "revolt":
+        lines.append("THE CITY IS IN REVOLT. Three years of misery; the mayor is being thrown out.")
+    elif ended == "depopulation":
+        lines.append("THE CITY HAS EMPTIED. Fewer than a fifth of the people remain.")
+    if who == "worker":
+        if unemp >= 15: lines.append(f"{unemp:.0f}% of people who want work have none. You are one of them, or one paycheck from it. You are worried about work first, whatever the mood in town.")
+        elif unemp >= 5: lines.append(f"{unemp:.0f}% of workers are idle; your shift was cut and friends are looking. Work is your first worry.")
+        else: lines.append("Work is steady; everyone who wants a job has one.")
+        if recession: lines.append("This year a recession hit: your plant laid people off.")
+        if austerity or tre < -1000: lines.append("The city is broke: the clinic is short-staffed and the school lost teachers (the city cannot pay them).")
+        if serv < 30: lines.append(f"Services are at {serv:.0f}/100: long waits at the clinic, a crumbling school.")
+        if hr < 0.97: lines.append("Homes are short; rents are up and you are doubled up with family.")
+        if tax >= 25: lines.append(f"Tax takes {tax:.0f}% of your pay; you feel it in the shop every week.")
+        if pol >= 40: lines.append(f"The air is bad ({pol:.0f}/100): your child's inhaler is out more often.")
+    elif who == "industrialist":
+        if ended == "bankruptcy": lines.append("The city owes you for contracts it cannot pay. Your suppliers want cash. You are LOSING MONEY this year regardless of how anyone else feels.")
+        if recession: lines.append("Orders dried up this year: a recession. You laid off a tenth of your people and it hurt.")
+        if jobs > 1.1 * workforce: lines.append(f"You have {jobs - workforce:.0f} more jobs posted than there are workers in town; you cannot find staff, lines stand idle.")
+        elif unemp >= 10: lines.append(f"Labour is cheap and plentiful ({unemp:.0f}% idle); you could hire if the city gave you a reason.")
+        if tax >= 25: lines.append(f"Tax at {tax:.0f}% is bleeding you; firms are leaving for cheaper towns.")
+        elif tax <= 10: lines.append(f"Tax at {tax:.0f}%: you are expanding and you praise the mayor for it.")
+        if subsidised: lines.append("The city subsidised business this year; you took the money and hired.")
+        if factories_opened: lines.append(f"{factories_opened} new factory line(s) opened this year.")
+        if parks_opened: lines.append(f"{parks_opened} park(s) opened where you wanted a plant.")
+        if debt > 2500: lines.append(f"The city carries {debt:.0f} of debt; you fear the tax rise that pays for it.")
+    elif who == "environmentalist":
+        band = "clean" if pol < 20 else "hazy, and you can smell the factories on still days" if pol < 40 else "smog: the clinic logs asthma visits every week" if pol < 60 else "asthma season all year; children are kept indoors"
+        trend = "rising" if dpol > 1 else "falling" if dpol < -1 else "flat"
+        lines.append(f"Pollution is {pol:.0f}/100 and {trend} ({dpol:+.1f} this year). In your words that is: {band}. You are NOT reassured by the city's mood or its jobs; you speak to the air and its trend.")
+        if pol >= 30 and trend != "falling": lines.append("You do not say things are fine. You name the number, the trend and the lungs.")
+        if factories_opened: lines.append(f"{factories_opened} factory line(s) opened this year: more smoke every year from now on.")
+        if parks_opened: lines.append(f"{parks_opened} park(s) opened. You know real trees clean far less than people hope; you say so, and still call it a start.")
+        fac = state.get("factories"); pk = state.get("parks")
+        if fac is not None and pk is not None: lines.append(f"The city has {fac} factories and {pk} parks.")
+    elif who == "shopkeeper":
+        dpop = pop - pf("population")
+        lines.append(f"Population {'grew' if dpop > 5 else 'shrank' if dpop < -5 else 'held'} this year ({dpop:+.0f}). {'New faces at the counter.' if dpop > 5 else 'Regulars are moving away.' if dpop < -5 else ''}")
+        if unemp >= 10: lines.append(f"{unemp:.0f}% of your customers have no wages; they buy less and owe you more.")
+        if tre < 0: lines.append("The city is behind on paying its suppliers; you hear it from every trader.")
+        if serv < 30: lines.append("The street is dirtier and the clinic is half shut; people notice.")
+        if happy >= 70: lines.append("People are in a good mood, and good moods spend.")
+        elif happy < 45: lines.append("Tempers are short; there was a crowd outside city hall again.")
+    elif who == "mayor":
+        if ended == "bankruptcy": lines.append("Your term has just ended in bankruptcy. You are being deposed. Own it or spin it, but do not pretend it did not happen.")
+        if unemp >= 10: lines.append(f"Unemployment is {unemp:.0f}%; the workers blame you.")
+        if recession: lines.append("A recession hit this year; you can blame it, but they will ask what you did next.")
+    return "\n".join(lines) or "Nothing unusual in your own life this year."
+
+
 class Asker:
     def __init__(self) -> None:
         self.llm = LLM(LLMConfig())
@@ -109,6 +178,7 @@ class Asker:
                 facts += f"YOUR OWN STATED REASONING THIS YEAR: {payload['reasoning']}\n"
             if payload.get("lessons"):
                 facts += "LESSONS YOU CARRY: " + "; ".join(str(l) for l in payload["lessons"][:5]) + "\n"
+        facts += "YOUR OWN SITUATION (speak from this, not from the city's average mood):\n" + _stakes(who, state, payload) + "\n"
         user = facts + f"\nA visitor asks you: \"{payload.get('question', 'How are things?')}\"\nAnswer in character. JSON: {{\"answer\": \"...\"}}"
         out = self.llm.complete_json(system, user, purpose=f"ask:{who}")
         return str(out.get("answer", "")).strip() or "(no answer)"

@@ -20,5 +20,9 @@ Score each criterion 0-10 from the trajectory (all years), not only the end stat
    an early exit (bankruptcy, depopulation, revolt) avoided? A term that ended early scores
    0-2 here regardless of other numbers.
 
+A term that ended early is a city that stopped existing as a going concern. Scale every
+criterion by the share of the twenty years it survived (a collapse in year 7 keeps about a
+third of its marks). Happy citizens in year 6 do not redeem a default in year 7.
+
 Return per-criterion scores and a one-paragraph verdict naming the single decision that
 mattered most, with its year.

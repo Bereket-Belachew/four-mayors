@@ -559,6 +559,11 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
     start_pop = world.history[0]["state_before"]["population"] if world.history else p.start_population
     if s.broke_years >= p.bankruptcy_years:
         world.ended = "bankruptcy"
+        if p.bankruptcy_mood_shock > 0:
+            before = s.happiness
+            s.happiness = _clamp(s.happiness - p.bankruptcy_mood_shock, 0, 100)
+            emit("happiness", s.happiness - before, "borrow" if s.debt > 0 else "economy", year,
+                 "the city defaults: wages unpaid, pensions cut, its credit gone")
     elif s.population < p.depopulation_share * start_pop:
         world.ended = "depopulation"
     elif s.unhappy_years >= p.revolt_years:

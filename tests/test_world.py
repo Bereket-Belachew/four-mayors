@@ -208,3 +208,19 @@ def test_do_nothing_decays_but_an_active_mayor_beats_it():
     active = run_script(0, [[Action("subsidize_business", {"amount": 2})]]
                         + [[Action("fund_services", {"level": 1})] if i % 3 == 0 else [] for i in range(19)])
     assert score_trajectory(active.history, active.ended)["total"] > score_trajectory(nothing.history, nothing.ended)["total"] + 5
+
+
+def test_bankruptcy_hits_mood_and_the_score():
+    """The day the city defaults, happiness drops; and an early exit keeps only the share of its marks it survived."""
+    from judge.scoreboard import score_trajectory
+    spam = [[Action("build_housing", {"units": 400})] for _ in range(20)]
+    w = run_script(0, spam)
+    assert w.ended == "bankruptcy"
+    last = w.history[-1]
+    shock = [e for e in last["events"] if "defaults" in (e.get("note") or "")]
+    assert shock and shock[0]["delta"] <= -20
+    before = w.history[-2]["state"]["happiness"]
+    assert last["state"]["happiness"] < before - 15
+    sc = score_trajectory(w.history, w.ended)
+    assert sc["total"] <= 60 * len(w.history) / 20 + 1e-6
+    assert sc["resilience"] <= 2.0

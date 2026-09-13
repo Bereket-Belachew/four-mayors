@@ -148,6 +148,7 @@
       const r = await fetch(ASK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         character: selected, question: q, mayor: ep.mayor, state: rec ? rec.state : ep.final_state,
         recent_events: rec ? rec.events : [], reasoning: rec ? rec.reasoning : "", year, term: ep.term, scenario: ep.scenario,
+        prev_state: rec ? rec.state_before : null, ended: (rec && year >= ep.years && ep.ended !== "horizon") ? ep.ended : null,
         lessons: (ep.memory_before?.lessons || []).map(l => l.rule),
       }) });
       const j = await r.json();

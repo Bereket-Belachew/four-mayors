@@ -34,6 +34,8 @@ Everything below exists to make this line true. -->
 ## Later: the science article
 - Later, when the world is a good scientific representation: a professional 'The science behind our world' article, written like an Aeon essay (human, well-written, no jargon), with the research sources as an appendix. Draft material: docs/research/world-models.md. (his ask, Sun 2026-09-13 morning)
 
+- Also: a benchmark-style paper with strong visuals on the discoveries and patterns across many runs (e.g. evidence that the double-loop design — lessons reviewed against outcomes — improves the economy over terms; where the three graders disagree; the housing trap; the recession recoveries). Same Aeon-like register. (his ask, Sun 2026-09-13 ~11:10)
+
 ## Scoring holes found Sun 2026-09-13 morning — parked, not fixed (his call: research first)
 - Unemployment is 0.00 at the end of all 24 demo terms. Workforce = 60% of population; default city has 900 jobs for 600 workers; revenue taxes ALL jobs (phantom jobs pay). Employment pinned at 1 → prosperity 10, mood floor ~73, unbounded treasury (Bureaucrat 78k).
 - Housing: flat +2 and move-in self-corrects the ratio → doing nothing scores 10.

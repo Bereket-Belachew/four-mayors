@@ -10,6 +10,7 @@ from typing import Any
 CRITERIA = ["prosperity", "housing", "fiscal", "environment", "wellbeing", "resilience"]
 HOUSING_BAND = (1.03, 1.10)   # the natural vacancy rate, 3-10% empty (Rosen & Smith 1983); was 1.0-1.2 with a free +2
 HOUSING_BAD = (0.9, 1.5)
+HORIZON = 20                 # a term that ends early keeps only the share of its marks it survived
 
 
 def _clamp10(x: float) -> float:
@@ -95,5 +96,11 @@ def score_trajectory(history: list[dict[str, Any]], ended: str) -> dict[str, flo
         "prosperity": prosperity, "housing": housing, "fiscal": fiscal,
         "environment": environment, "wellbeing": wellbeing, "resilience": resilience,
     }
+    if ended != "horizon":
+        # bankruptcy, revolt or depopulation: the city as a going concern is gone. Every criterion keeps only
+        # the share of the term it survived (a collapse in year 7 keeps 35% of its marks); resilience stays <= 2.
+        survived = min(1.0, len(history) / HORIZON)
+        for k in scores:
+            scores[k] = round(scores[k] * survived, 2)
     scores["total"] = round(sum(scores.values()), 2)
     return scores

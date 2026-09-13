@@ -160,6 +160,7 @@ class Params:
     # ---- end states -------------------------------------------------------------
     bankruptcy_floor: float = -3000.0
     bankruptcy_years: int = 2
+    bankruptcy_mood_shock: float = 25.0   # the day the city defaults: wages unpaid, pensions cut, credit gone. Happiness falls by this much (Detroit 2013), and the misery is inherited by the next term
     depopulation_share: float = 0.20
     revolt_floor: float = 25.0
     revolt_years: int = 3

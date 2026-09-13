@@ -165,7 +165,8 @@ year 7 with population still near its peak. It looks like success right up to th
 ## 5. How a term ends
 
 A term is 20 years [horizon]. It ends early if:
-- **Bankruptcy:** treasury below −3000 [bankruptcy_floor] for 2 years running.
+- **Bankruptcy:** treasury below −3000 [bankruptcy_floor] for 2 years running. The day it happens, happiness falls 25 points
+  [bankruptcy_mood_shock]: wages unpaid, pensions cut, the city's credit gone (Detroit 2013). The next term inherits that misery.
 - **Depopulation:** population below 20% of where it started [depopulation_share].
 - **Revolt:** happiness below 25 [revolt_floor] for 3 years running [revolt_years].
 
@@ -220,6 +221,10 @@ Six criteria, each 0 to 10, total 60. Written as formulas so the same term alway
 | environment | air got cleaner | 6 − (pollution change)/6 |
 | wellbeing | people were content, no deep misery | 0.7 × average happiness/10 + 0.3 × lowest happiness/10 |
 | resilience | climbed back fast from the recession and other dips; no early exit | early exit: at most 2. Otherwise 7 − 0.5 per year spent in a dip + 1.5 per recovery (dip = 15% below the running peak in jobs or happiness; recovery = back to 95%). Treasury is not counted: spending it is a choice, not a shock. |
+
+**A term that ends early keeps only the share of its marks it survived:** every criterion is multiplied by years played ÷ 20, so a
+bankruptcy in year 7 keeps 35% and a two-year stub keeps 10%. Happy citizens in year 6 do not redeem a default in year 7
+(added 2026-09-13 11:20, his call: bankruptcies were scoring within a few points of full terms).
 
 Every weight here is my judgement of what a good mayor is. Change any of them.
 
