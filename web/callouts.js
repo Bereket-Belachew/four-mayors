@@ -3,10 +3,85 @@
 // Also a tiny synthesized soundboard (off by default; toggle in the header).
 import * as THREE from "three";
 
-const INSET_W = 300, INSET_H = 190, MARGIN = 14, DURATION = 4000;
+const INSET_W = 300, INSET_H = 190, MARGIN = 14, DURATION = 5500;
 let R = null; // {renderer, scene, camera, game, N}
 let active = [];
 let svg = null, box = null, insetCam = null;
+const CHAR = "assets/kenney/kenney_blocky-characters/Models/GLB format/";
+const CHARS = "abcdefghijklmnopqr".split("").map(x => CHAR + `character-${x}.glb`);
+let stageActors = [], stageMixers = [], stageProps = [];
+async function actor(url, x, z, anim, faceX, faceZ, scale = 0.42) {
+  const m = await R.loadModelFull(url);
+  const o = m.root.clone(true); o.scale.setScalar(scale / Math.max(m.size.y, 0.01)); o.position.set(x, 0, z);
+  if (faceX !== undefined) o.lookAt(faceX, 0, faceZ);
+  const mx = new THREE.AnimationMixer(o); const clip = m.animations.find(a => a.name === anim) || m.animations[0];
+  if (clip) { const a = mx.clipAction(clip); a.play(); a.time = Math.random() * clip.duration; }
+  o.userData.mixer = mx; o.userData.clips = m.animations; R.scene.add(o); stageActors.push(o); stageMixers.push(mx);
+  return o;
+}
+function clearStage() { for (const a of stageActors) R.scene.remove(a); for (const p of stageProps) R.scene.remove(p); stageActors = []; stageMixers = []; stageProps = []; }
+export function updateStage(dt) {
+  for (const m of stageMixers) m.update(dt);
+  for (const a of stageActors) if (a.userData.path) { const p = a.userData.path; p.t = Math.min(1, p.t + dt / p.dur); const q = p.t < 0.5 ? 2 * p.t * p.t : 1 - Math.pow(-2 * p.t + 2, 2) / 2; a.position.lerpVectors(p.from, p.to, q); if (p.t >= 1 && !p.arrived) { p.arrived = true; if (a.userData.onArrive) a.userData.onArrive(a); } }
+  for (const a of stageActors) if (a.userData.orbit) { const o = a.userData.orbit; o.t += dt * o.speed; a.position.set(o.x + Math.cos(o.t) * o.r, 0, o.z + Math.sin(o.t) * o.r); a.lookAt(o.x + Math.cos(o.t + 0.1) * o.r, 0, o.z + Math.sin(o.t + 0.1) * o.r); }
+}
+// each kind of callout is a small choreographed scene at the spot
+async function stagePlay(c) {
+  const { x, z } = c.spot; const hall = { x: 5, z: 5 };
+  const rnd = i => ((i * 9301 + 49297) % 233280) / 233280;
+  switch (c.play) {
+    case "crowd": {
+      for (let i = 0; i < 10; i++) {
+        const sx = x + (rnd(i) - 0.5) * 3.6 + (rnd(i + 3) > 0.5 ? 2.2 : -2.2), sz = z + 1.6 + rnd(i + 7) * 1.4;
+        const to = new THREE.Vector3(x - 1.2 + (i % 5) * 0.6 + rnd(i + 11) * 0.15, 0, z + 0.9 + Math.floor(i / 5) * 0.45);
+        const a = await actor(CHARS[i % CHARS.length], sx, sz, "sprint", to.x, to.z);
+        a.userData.path = { from: a.position.clone(), to, t: 0, dur: 0.9 + rnd(i + 5) * 0.8 };
+        a.userData.onArrive = o => { o.lookAt(x, 0, z); playAnim(o, i % 2 ? "emote-no" : "holding-right"); };
+      }
+      break;
+    }
+    case "leave": {
+      for (let i = 0; i < 5; i++) {
+        const a = await actor(CHARS[(i + 4) % CHARS.length], x, z + 0.35, "walk", x + (i - 2) * 0.4, z + 2);
+        a.userData.path = { from: a.position.clone(), to: new THREE.Vector3(x + (i - 2) * 0.45, 0, z + 1.4 + (i % 2) * 0.3), t: 0, dur: 1.6 + i * 0.25 };
+        a.userData.onArrive = o => playAnim(o, "holding-left");
+      }
+      const van = await R.place(R.MODELS.car[3], x + 0.9, z + 0.75, { fit: 0.28, rotY: Math.PI / 2 }); R.scene.add(van); stageProps.push(van);
+      break;
+    }
+    case "workers": {
+      for (let i = 0; i < 3; i++) {
+        const a = await actor(CHARS[(i + 8) % CHARS.length], x + (i - 1) * 0.35, z + 1.6, "walk", x, z);
+        a.userData.path = { from: a.position.clone(), to: new THREE.Vector3(x + (i - 1) * 0.3, 0, z + 0.55), t: 0, dur: 1.8 + i * 0.3 };
+        a.userData.onArrive = o => playAnim(o, "idle");
+      }
+      for (let i = 0; i < 3; i++) { const cone = await R.place(R.MODELS.cone, x - 0.5 + i * 0.5, z + 0.7, { fit: 0.12 }); R.scene.add(cone); stageProps.push(cone); }
+      break;
+    }
+    case "picnic": {
+      await actor(CHARS[2], x - 0.25, z + 0.25, "sit", x + 1, z + 1);
+      await actor(CHARS[6], x + 0.2, z + 0.3, "sit", x - 1, z + 1);
+      const kid = await actor(CHARS[11], x + 0.7, z, "sprint", undefined, undefined, 0.3); kid.userData.orbit = { x, z, r: 0.75, t: 0, speed: 1.6 };
+      break;
+    }
+    case "van": {
+      const van = await R.place(R.MODELS.car[3], x + 3.0, z + 0.75, { fit: 0.28, rotY: -Math.PI / 2 }); R.scene.add(van); stageProps.push(van);
+      van.userData.path = { from: van.position.clone(), to: new THREE.Vector3(x + 0.85, van.position.y, z + 0.75), t: 0, dur: 1.8 }; stageActors.push(van);
+      const clerk = await actor(CHARS[14], x + 0.4, z + 0.8, "idle", x + 3, z + 0.8);
+      break;
+    }
+    case "steps": {
+      for (let i = 0; i < 4; i++) await actor(CHARS[(i + 12) % CHARS.length], x - 0.6 + i * 0.4, z + 0.7, "sit", x - 0.6 + i * 0.4, z + 3);
+      for (let i = 0; i < 2; i++) { const d = await R.place(R.MODELS.dumpster, x + 0.75, z + 0.15 + i * 0.4, { fit: 0.22 }); R.scene.add(d); stageProps.push(d); }
+      break;
+    }
+  }
+}
+function playAnim(o, name) {
+  const mx = o.userData.mixer; if (!mx) return;
+  const clips = o.userData.clips; if (!clips) return;
+  mx.stopAllAction(); const clip = clips.find(a => a.name === name) || clips[0]; if (clip) mx.clipAction(clip).play();
+}
 
 export function initCallouts(ctx) {
   R = ctx;
@@ -40,25 +115,25 @@ export function planCallouts(ep, year, lotMeta, N, transitions = []) {
   const hall = lot("hall") || { x: 5, z: 5 };
   // 1. a building comes down: a tower emptied to a house, or a house shuttered
   const down = transitions.filter(t => t.dir === "down");
-  if (down.length) { const t = down[0]; out.push({ kind: "bad", spot: { x: t.c, z: t.r }, title: t.from === "tower" ? "A tower empties out" : "Boarded up", text: `${down.length} building${down.length > 1 ? "s" : ""} downgraded this year. Occupancy ${Math.round(100 * s.population / Math.max(s.housing, 1))}%, happiness ${s.happiness}.`, sfx: "collapse", priority: 50 }); }
+  if (down.length) { const t = down[0]; out.push({ kind: "bad", spot: { x: t.c, z: t.r }, play: "leave", title: t.from === "tower" ? "A tower empties out" : "Boarded up", text: `${down.length} building${down.length > 1 ? "s" : ""} downgraded this year. Occupancy ${Math.round(100 * s.population / Math.max(s.housing, 1))}%, happiness ${s.happiness}.`, sfx: "collapse", priority: 50 }); }
   // 2. a factory or park opens
   for (const e of rec.events) {
     if (e.cause_action === "economy" || e.cause_year >= year) continue;
-    if (e.variable === "factories") out.push({ kind: "good", spot: lot("factory") || hall, title: "A factory opens", text: `Ordered in year ${e.cause_year}. +${Math.round(150 * e.delta)} jobs, and smoke every year from now on.`, sfx: "thud", priority: 40 });
-    else if (e.variable === "parks") out.push({ kind: "good", spot: lot("park") || hall, title: "A park opens", text: `Ordered in year ${e.cause_year}. It absorbs a share of the air's pollution.`, sfx: "chime", priority: 30 });
+    if (e.variable === "factories") out.push({ kind: "good", spot: lot("factory") || hall, play: "workers", title: "A factory opens", text: `Ordered in year ${e.cause_year}. +${Math.round(150 * e.delta)} jobs, and smoke every year from now on.`, sfx: "thud", priority: 40 });
+    else if (e.variable === "parks") out.push({ kind: "good", spot: lot("park") || hall, play: "picnic", title: "A park opens", text: `Ordered in year ${e.cause_year}. It absorbs a share of the air's pollution.`, sfx: "chime", priority: 30 });
   }
   // 3. a loan, taken or refused
   const refused = rec.ignored.find(i => /lenders refuse/.test(i.why));
-  if (refused) out.push({ kind: "bad", spot: hall, title: "Lenders refuse", text: refused.why.replace(/^lenders refuse: /, ""), sfx: "thud", priority: 60 });
+  if (refused) out.push({ kind: "bad", spot: hall, play: "steps", title: "Lenders refuse", text: refused.why.replace(/^lenders refuse: /, ""), sfx: "thud", priority: 60 });
   const loan = rec.events.find(e => e.cause_action === "borrow" && e.variable === "debt" && e.cause_year === year);
-  if (loan) out.push({ kind: "warn", spot: hall, title: `Borrowed ${Math.round(loan.delta)}`, text: `Debt is now ${s.debt}. Interest of about ${Math.round(s.debt * 0.08)} a year follows, forever.`, sfx: "cash", priority: 35 });
+  if (loan) out.push({ kind: "warn", spot: hall, play: "van", title: `Borrowed ${Math.round(loan.delta)}`, text: `Debt is now ${s.debt}. Interest of about ${Math.round(s.debt * 0.08)} a year follows, forever.`, sfx: "cash", priority: 35 });
   // 4. austerity, or services collapsing
   const aust = rec.events.find(e => /austerity/.test(e.note || ""));
-  if (aust) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Austerity", text: `The city could not pay its staff. Services ${Math.round(aust.delta)} on top of normal decay. Treasury ${s.treasury}.`, sfx: "thud", priority: 55 });
-  else if (s.services < 30 && prev.services >= 30) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Services collapse", text: `Services ${s.services}. Dumpsters on the corners, clinics closing.`, sfx: "thud", priority: 45 });
+  if (aust) out.push({ kind: "bad", spot: lot("civic") || hall, play: "steps", title: "Austerity", text: `The city could not pay its staff. Services ${Math.round(aust.delta)} on top of normal decay. Treasury ${s.treasury}.`, sfx: "thud", priority: 55 });
+  else if (s.services < 30 && prev.services >= 30) out.push({ kind: "bad", spot: lot("civic") || hall, play: "steps", title: "Services collapse", text: `Services ${s.services}. Dumpsters on the corners, clinics closing.`, sfx: "thud", priority: 45 });
   // 5. the crowd grows
   const dh = s.happiness - prev.happiness;
-  if (s.happiness < 50 && dh <= -3) out.push({ kind: "bad", spot: hall, title: "The crowd grows", text: `Happiness ${prev.happiness} → ${s.happiness}. More people outside city hall. Tax ${Math.round(s.tax_rate * 100)}%, services ${s.services}, pollution ${s.pollution}.`, sfx: "crowd", priority: 65 });
+  if (s.happiness < 50 && dh <= -3) out.push({ kind: "bad", spot: hall, play: "crowd", title: "The crowd grows", text: `Happiness ${prev.happiness} → ${s.happiness}. More people outside city hall. Tax ${Math.round(s.tax_rate * 100)}%, services ${s.services}, pollution ${s.pollution}.`, sfx: "crowd", priority: 65 });
   out.sort((a, b) => b.priority - a.priority);
   return out.slice(0, 1); // one at a time, never overwhelm
 }
@@ -77,17 +152,22 @@ export function showCallout(c) {
     const W = R.game.clientWidth, H = R.game.clientHeight;
     const p = new THREE.Vector3(c.spot.x, 0.5, c.spot.z).project(R.camera);
     const sx = (p.x + 1) / 2 * W, sy = (-p.y + 1) / 2 * H;
-    const x = sx < W / 2 ? MARGIN : W - INSET_W - MARGIN;
-    const y = Math.max(MARGIN, Math.min(H - INSET_H - 96, sy - INSET_H / 2));
+    let x = sx < W / 2 ? MARGIN : W - INSET_W - MARGIN;
+    let y = Math.max(MARGIN, Math.min(H - INSET_H - 96, sy - INSET_H / 2));
+    // if the window would sit on top of the spot, slide it above or below the spot instead
+    if (sx > x - 30 && sx < x + INSET_W + 30 && sy > y - 30 && sy < y + INSET_H + 96) {
+      y = sy > H / 2 ? Math.max(MARGIN, sy - INSET_H - 140) : Math.min(H - INSET_H - 96, sy + 70);
+    }
     const item = { ...c, el, line, dot, t0: performance.now(), angle: Math.random() * Math.PI * 2, x, y, resolve };
     active.push(item);
     el.style.left = `${x}px`; el.style.top = `${y}px`;
     requestAnimationFrame(() => el.classList.add("in"));
     playSfx(c.sfx);
+    if (c.play) stagePlay(c).catch(e => console.warn("callout play failed", e));
     setTimeout(() => { el.classList.remove("in"); setTimeout(() => remove(item), 400); }, c.duration || DURATION);
   });
 }
-function remove(item) { active = active.filter(a => a !== item); item.el.remove(); item.line.remove(); item.dot.remove(); item.resolve && item.resolve(); }
+function remove(item) { active = active.filter(a => a !== item); item.el.remove(); item.line.remove(); item.dot.remove(); if (!active.length) clearStage(); item.resolve && item.resolve(); }
 export function clearCallouts() { for (const a of active.slice()) remove(a); }
 export function calloutsActive() { return active.length > 0; }
 
@@ -101,7 +181,7 @@ export function renderCallouts() {
     const t = (performance.now() - a.t0) / 1000;
     const spot = new THREE.Vector3(a.spot.x, 0.5, a.spot.z);
     const ang = a.angle + t * 0.25;
-    insetCam.position.set(spot.x + Math.cos(ang) * 2.6, 1.7, spot.z + Math.sin(ang) * 2.6); insetCam.lookAt(spot);
+    insetCam.position.set(spot.x + Math.cos(ang) * 2.1, 1.1, spot.z + 0.6 + Math.sin(ang) * 2.1); insetCam.lookAt(spot.x, 0.35, spot.z + 0.6);
     insetCam.aspect = INSET_W / INSET_H; insetCam.updateProjectionMatrix();
     const x = a.x, yTop = a.y;
     const vx = Math.round(x * dpr), vy = Math.round((H - yTop - INSET_H) * dpr), vw = Math.round(INSET_W * dpr), vh = Math.round(INSET_H * dpr);

@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789275051";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789275051";
-import { initHero, setHero } from "./hero.js?v=1789275051";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789275444";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789275444";
+import { initHero, setHero } from "./hero.js?v=1789275444";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -372,6 +372,7 @@ let frameNo = 0, fpsAcc = 0, fpsN = 0;
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (cinema) cinema.update(dt);
+  updateStage(dt);
   for (const m of distressMixers) m.update(dt);
   if (mode === "orbit" && !(cinema && cinema.playing)) orbit.update();
   else if (mode === "street") {
@@ -392,7 +393,7 @@ function animate() {
 }
 animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
-initCallouts({ renderer, scene, camera, game, N });
+initCallouts({ renderer, scene, camera, game, N, loadModelFull: loadModel, place, MODELS });
 initHero(document.querySelector("aside"));
 window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.__dbg = () => ({ ticking, playing, year, orbit: orbit.enabled, transitions: (window.lastTransitions || []).length }); window.showCallout = showCallout;
 window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = name; const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
