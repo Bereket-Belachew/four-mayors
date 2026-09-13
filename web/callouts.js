@@ -175,7 +175,7 @@ export function calloutsActive() { return active.length > 0; }
 export function renderCallouts() {
   if (!R || !active.length) return;
   const { renderer, scene, camera, game } = R;
-  const W = game.clientWidth, H = game.clientHeight, dpr = renderer.getPixelRatio();
+  const W = game.clientWidth, H = game.clientHeight; // three.js setViewport/setScissor take CSS pixels and apply the pixel ratio themselves
   renderer.autoClear = false;
   active.forEach((a, i) => {
     const t = (performance.now() - a.t0) / 1000;
@@ -184,7 +184,7 @@ export function renderCallouts() {
     insetCam.position.set(spot.x + Math.cos(ang) * 2.1, 1.1, spot.z + 0.6 + Math.sin(ang) * 2.1); insetCam.lookAt(spot.x, 0.35, spot.z + 0.6);
     insetCam.aspect = INSET_W / INSET_H; insetCam.updateProjectionMatrix();
     const x = a.x, yTop = a.y;
-    const vx = Math.round(x * dpr), vy = Math.round((H - yTop - INSET_H) * dpr), vw = Math.round(INSET_W * dpr), vh = Math.round(INSET_H * dpr);
+    const vx = x, vy = H - yTop - INSET_H, vw = INSET_W, vh = INSET_H; // WebGL's origin is bottom-left
     renderer.setScissorTest(true); renderer.setScissor(vx, vy, vw, vh); renderer.setViewport(vx, vy, vw, vh);
     renderer.clear(true, true, false);
     renderer.render(scene, insetCam);
@@ -197,7 +197,7 @@ export function renderCallouts() {
     const visible = p.z < 1 && sx > 0 && sx < W && sy > 0 && sy < H;
     a.line.style.display = a.dot.style.display = visible ? "" : "none";
   });
-  renderer.setScissorTest(false); renderer.setViewport(0, 0, Math.round(W * dpr), Math.round(H * dpr));
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H);
   renderer.autoClear = true;
 }
 
