@@ -139,3 +139,14 @@ aside h2 .score { color: var(--ink); font-weight: 600; font-size: 14px; white-sp
 #cinema .card .k { color: var(--muted) !important; }
 #cinema .skip { background: rgba(251,250,247,.9) !important; color: var(--ink) !important; border: none !important; border-radius: 999px !important; }
 #cinema .counter { background: var(--bad) !important; border: none !important; border-radius: var(--radius-s) !important; }
+
+/* end card: the term is over */
+#endcard { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); z-index:7; width:min(560px, 92%); text-align:center; padding:18px 22px 16px; border-radius:var(--radius); background:rgba(251,250,247,.94); backdrop-filter:blur(10px); box-shadow:var(--shadow), 0 0 0 1px var(--hair-2); animation:ec-in .35s cubic-bezier(.2,.8,.2,1); }
+#endcard.early { box-shadow:var(--shadow), 0 0 0 2px var(--bad); }
+#endcard .ec-kicker { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+#endcard .ec-title { font-size:34px; font-weight:700; letter-spacing:-.02em; margin:2px 0 6px; color:var(--bad); }
+#endcard.full .ec-title { color:var(--ink); } #endcard .ec-title.small { font-size:22px; }
+#endcard .ec-line { color:var(--ink-2); font-size:13px; }
+#endcard .ec-score { margin-top:8px; font-size:13px; color:var(--ink-2); } #endcard .ec-score b { color:var(--ink); font-size:15px; }
+#endcard .ec-actions { margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+@keyframes ec-in { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%); } }

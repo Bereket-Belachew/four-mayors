@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789323782";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789323782";
-import { initHero, setHero } from "./hero.js?v=1789323782";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789325156";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789325156";
+import { initHero, setHero } from "./hero.js?v=1789325156";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -455,8 +455,40 @@ function updateFeed() {
 
 // ---------- side panel (same as iso.js) ----------
 let heroFor = null;
+// The end card: when the timeline sits on the last year of a term that ended early, say so, loudly,
+// so nobody scrubs past a bankruptcy thinking the city is fine. Sits under the cinematics (z 8).
+const END = {
+  bankruptcy: { title: "BANKRUPT", line: "The city defaulted: wages unpaid, pensions cut, its credit gone." },
+  revolt: { title: "REVOLT", line: "Three years of misery. The mayor is thrown out." },
+  depopulation: { title: "THE CITY EMPTIED", line: "Fewer than a fifth of the people remain." },
+};
+function renderEndCard() {
+  let el = document.getElementById("endcard");
+  if (!el) { el = document.createElement("div"); el.id = "endcard"; el.hidden = true; $("game").appendChild(el); }
+  const early = ep && ep.ended !== "horizon";
+  const atEnd = ep && year >= ep.years;
+  if (!ep || !atEnd || (!early && year < 20)) { el.hidden = true; return; }
+  const last = ep.history[ep.history.length - 1]?.state || ep.final_state || {};
+  const kept = Math.round(100 * Math.min(1, ep.years / 20));
+  const nextTerm = episodes.find(e => e.mayor === ep.mayor && e.seed === ep.seed && e.term === ep.term + 1);
+  if (early) {
+    const k = END[ep.ended] || { title: ep.ended.toUpperCase(), line: "" };
+    el.className = "early";
+    el.innerHTML = `<div class="ec-kicker">term ${ep.term + 1} ended in year ${ep.years} of 20</div><div class="ec-title">${k.title}</div><div class="ec-line">${k.line} Happiness ${last.happiness}, treasury ${last.treasury}, debt ${last.debt}.</div>
+      <div class="ec-score">score <b>${ep.scoreboard?.total ?? "–"}</b> of 60 · a city that collapses keeps only ${kept}% of its marks</div>
+      <div class="ec-actions">${nextTerm ? `<button class="primary" id="ec-next">next term · the city as ${NAMES[ep.mayor] || ep.mayor} left it →</button>` : `<span class="muted">this was the last term on file</span>`}<button id="ec-replay">▶ watch the last years</button></div>`;
+  } else {
+    el.className = "full";
+    el.innerHTML = `<div class="ec-kicker">term ${ep.term + 1} complete · 20 years</div><div class="ec-title small">The city stands</div><div class="ec-score">score <b>${ep.scoreboard?.total ?? "–"}</b> of 60</div>
+      <div class="ec-actions">${nextTerm ? `<button class="primary" id="ec-next">next term →</button>` : ""}</div>`;
+  }
+  el.hidden = false;
+  const nx = el.querySelector("#ec-next"); if (nx) nx.onclick = () => { $("term").value = String(ep.term + 1); select(ep.mayor); };
+  const rp = el.querySelector("#ec-replay"); if (rp) rp.onclick = () => { stop(); year = Math.max(0, ep.years - 3); rebuild(true); render(); play(); };
+}
 function render() {
-  $("year").textContent = `year ${year} / 20`; $("scrub").value = year;
+  $("year").textContent = ep && ep.ended !== "horizon" ? `year ${year} / ${ep.years} · ended: ${ep.ended}` : `year ${year} / 20`; $("scrub").value = year;
+  renderEndCard();
   if (!ep) return;
   if (heroFor !== ep) { heroFor = ep; setHero(ep); }
   updateFeed();
