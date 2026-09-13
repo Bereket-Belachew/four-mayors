@@ -46,6 +46,8 @@
   body.no-chamber.no-panel { grid-template-columns:44px 1fr; }
   @media (max-width: 1300px) { body { grid-template-columns:260px 1fr 300px; } }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+  aside > * { flex-shrink:0; }
+  aside .decision { max-height:110px; overflow:auto; }
   aside h2 { margin:0; font-size:13px; display:flex; justify-content:space-between; align-items:baseline; color:#9aa0aa; }
   aside h2 .score { color:var(--warn); font-variant-numeric:tabular-nums; }
   .decision { font-size:12px; background:#1f2937; border-radius:6px; padding:6px 8px; min-height:34px; }
@@ -106,9 +108,9 @@
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
-<script type="module" src="city3d.js?v=1789274797"></script>
-<script src="narrator.js?v=1789274797"></script>
-<script src="tech.js?v=1789274797"></script>
-<script src="runpanel.js?v=1789274797"></script>
+<script type="module" src="city3d.js?v=1789275051"></script>
+<script src="narrator.js?v=1789275051"></script>
+<script src="tech.js?v=1789275051"></script>
+<script src="runpanel.js?v=1789275051"></script>
 </body>
 </html>

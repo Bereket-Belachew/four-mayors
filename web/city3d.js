@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789274797";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789274797";
-import { initHero, setHero } from "./hero.js?v=1789274797";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789275051";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789275051";
+import { initHero, setHero } from "./hero.js?v=1789275051";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -386,7 +386,7 @@ function animate() {
   for (const o of cityGroup.children) if (o.userData.fade !== undefined) { o.userData.fade -= dt * 0.6; o.material.opacity = Math.max(0, o.userData.fade); if (o.userData.fade <= 0) { cityGroup.remove(o); } }
   renderer.render(scene, camera);
   frameNo++;
-  if (frameNo % 2 === 0) renderCallouts();
+  renderCallouts(); // every frame: the main render clears the canvas, so skipping frames makes the inset flicker empty
   fpsAcc += dt; fpsN++; if (fpsAcc >= 1) { const el = $("fps"); if (el) el.textContent = `${Math.round(fpsN / fpsAcc)} fps`; fpsAcc = 0; fpsN = 0; }
   requestAnimationFrame(animate);
 }
