@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Cinema, planRecaps } from "./cinema.js";
 import { initCallouts, planCallouts, showCallout, renderCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js";
+import { initHero, setHero } from "./hero.js";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -341,6 +342,7 @@ function animate() {
 animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
 initCallouts({ renderer, scene, camera, game, N });
+initHero(document.querySelector("aside"));
 window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.showCallout = showCallout;
 window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
 
@@ -381,9 +383,11 @@ function updateFeed() {
 }
 
 // ---------- side panel (same as iso.js) ----------
+let heroFor = null;
 function render() {
   $("year").textContent = `year ${year} / 20`; $("scrub").value = year;
   if (!ep) return;
+  if (heroFor !== ep) { heroFor = ep; setHero(ep); }
   updateFeed();
   const s = stateAt(ep, year), rec = year > 0 ? ep.history[Math.min(year, ep.history.length) - 1] : null;
   $("mayorName").textContent = (NAMES[ep.mayor] || ep.mayor) + (ep.inherited ? " · inherited city" : "");
