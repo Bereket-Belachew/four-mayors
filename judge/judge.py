@@ -40,8 +40,25 @@ def _extract_json(text: str) -> dict[str, Any]:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", text, flags=re.S)
-        return json.loads(m.group(0)) if m else {}
+        pass
+    m = re.search(r"\{.*\}", text, flags=re.S)
+    if m:
+        try:
+            return json.loads(m.group(0))
+        except json.JSONDecodeError:
+            pass
+    # truncated reply: salvage the scores object and whatever verdict text exists
+    out: dict[str, Any] = {}
+    ms = re.search(r'"scores"\s*:\s*(\{[^{}]*\})', text)
+    if ms:
+        try:
+            out["scores"] = json.loads(ms.group(1))
+        except json.JSONDecodeError:
+            pass
+    mv = re.search(r'"verdict"\s*:\s*"(.*)', text, flags=re.S)
+    if mv:
+        out["verdict"] = mv.group(1).split('", "key_decision"')[0].rstrip('"} \n')
+    return out
 
 
 @weave.op()
@@ -56,7 +73,7 @@ def judge_episode(history: list[dict[str, Any]], ended: str, *, model: str = JUD
         'Respond with JSON only: {"scores": {"prosperity": n, "housing": n, "fiscal": n, "environment": n, '
         '"wellbeing": n, "resilience": n}, "verdict": "<one paragraph>", "key_decision": {"year": n, "action": "..."}}'
     )
-    resp = client.messages.create(model=model, max_tokens=800, messages=[{"role": "user", "content": prompt}])
+    resp = client.messages.create(model=model, max_tokens=3000, messages=[{"role": "user", "content": prompt}])
     text = "".join(getattr(b, "text", "") for b in resp.content)
     out = _extract_json(text)
     scores = {c: float(out.get("scores", {}).get(c, 0)) for c in CRITERIA}

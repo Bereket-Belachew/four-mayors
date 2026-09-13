@@ -200,15 +200,33 @@
     body.querySelectorAll(".card").forEach(c => c.onclick = () => { const top = body.scrollTop; pick = c.dataset.k; renderWorld(e).then(() => { body.scrollTop = top; }); });
   }
 
-  // ---------- JUDGES ----------
+  // ---------- JUDGES: three graders, side by side, and where they disagree ----------
   function renderJudges(e) {
-    const sb = e.scoreboard || {}, j = e.judge && e.judge.scores, t = e.judge_typesafe && e.judge_typesafe.scores;
+    const sb = e.scoreboard || {}, j = e.judge && e.judge.scores, t = e.judge_typesafe && e.judge_typesafe.scores, tc = e.judge_typesafe && e.judge_typesafe.confidence;
     const crit = ["prosperity", "housing", "fiscal", "environment", "wellbeing", "resilience"];
-    const row = k => `<tr><td>${k}</td><td>${sb[k] ?? "—"}</td><td>${j ? j[k] : "—"}</td><td>${t ? t[k] : "—"}</td></tr>`;
-    body.innerHTML = `<h2>Three graders, none of them the mayor</h2><p class="lead">The mayors never see the rubric: a test asserts no rubric phrase appears in any mayor prompt, and the mayor code has no import path to the judge. A judged score is reported beside the deterministic scoreboard and never summed into it. The judge is a model from a different lab than the mayors, on purpose.</p>
-      <table class="j"><tr><th>criterion (0–10)</th><th>formula scoreboard</th><th>Claude judge</th><th>TypeSafe judge</th></tr>${crit.map(row).join("")}<tr><th>total</th><th>${sb.total ?? "—"}</th><th>${j ? j.total : "not run"}</th><th>${t ? t.total : "not run"}</th></tr></table>
-      <h3>Why three</h3><p class="lead" style="font-size:13px">The formula is reproducible and is our opinion of what a good mayor is, written as arithmetic. The Claude judge reads the whole trajectory against six paragraphs of prose. TypeSafe is a machine-native evaluator: each criterion is a scored question with a legend, returned with a confidence. Where the three disagree is where the rubric is ambiguous, and where a judge favours a mayor's style is bias we can measure.</p>
-      ${e.judge?.verdict ? `<h3>The Claude judge's verdict</h3><p class="lead" style="font-size:13px">${e.judge.verdict}</p>` : `<p class="lead" style="font-size:13px;color:var(--muted)">Judges have not run on this file yet. <code>python runner.py --judge</code> or the run panel.</p>`}`;
+    const f1 = v => (v == null ? "—" : (+v).toFixed(1));
+    const row = k => `<tr><td>${k}</td><td>${f1(sb[k])}</td><td>${j ? f1(j[k]) : "—"}</td><td>${t ? f1(t[k]) : "—"}${tc && tc[k] != null ? ` <span class="muted" title="TypeSafe's confidence in this answer">· ${Math.round(tc[k] * 100)}%</span>` : ""}</td></tr>`;
+    // agreement across the whole file: mean total per mayor per grader, and each judge's favourite relative to the formula
+    const eps = allEps(); const mayors = [...new Set(eps.map(x => x.mayor))];
+    const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+    const agg = mayors.map(m => { const ms = eps.filter(x => x.mayor === m); return { m, n: ms.length, f: mean(ms.map(x => x.scoreboard?.total).filter(v => v != null)), c: mean(ms.map(x => x.judge?.scores?.total).filter(v => v != null)), ts: mean(ms.map(x => x.judge_typesafe?.scores?.total).filter(v => v != null)) }; });
+    const rank = key => { const order = [...agg].filter(a => a[key] != null).sort((a, b) => b[key] - a[key]).map(a => a.m); return m => { const i = order.indexOf(m); return i < 0 ? "" : `<span class="muted">#${i + 1}</span>`; }; };
+    const rF = rank("f"), rC = rank("c"), rT = rank("ts");
+    const anyJudge = agg.some(a => a.c != null || a.ts != null);
+    const aggRows = agg.map(a => `<tr><td>${NAMES[a.m] || a.m} <span class="muted">· ${a.n} terms</span></td><td>${f1(a.f)} ${rF(a.m)}</td><td>${f1(a.c)} ${rC(a.m)}</td><td>${f1(a.ts)} ${rT(a.m)}</td></tr>`).join("");
+    const bias = key => { const d = agg.filter(a => a[key] != null && a.f != null).map(a => ({ m: a.m, d: a[key] - a.f })); if (!d.length) return null; d.sort((a, b) => b.d - a.d); return { fav: d[0], harsh: d[d.length - 1] }; };
+    const bC = bias("c"), bT = bias("ts");
+    const sign = v => (v >= 0 ? "+" : "") + v.toFixed(1);
+    const biasText = anyJudge ? `<p class="lead" style="font-size:13px">Relative to the formula, ${bC ? `the Claude judge is kindest to <b>${NAMES[bC.fav.m] || bC.fav.m}</b> (${sign(bC.fav.d)}) and hardest on <b>${NAMES[bC.harsh.m] || bC.harsh.m}</b> (${sign(bC.harsh.d)})` : "the Claude judge has not run"}; ${bT ? `TypeSafe is kindest to <b>${NAMES[bT.fav.m] || bT.fav.m}</b> (${sign(bT.fav.d)}) and hardest on <b>${NAMES[bT.harsh.m] || bT.harsh.m}</b> (${sign(bT.harsh.d)})` : "TypeSafe has not run"}. Where the rankings agree, the result is robust to who grades it. Where they differ, the rubric is ambiguous or the judge has a taste.</p>` : "";
+    body.innerHTML = `<h2>Three graders, none of them the mayor</h2><p class="lead">The mayors never see the rubric: a test asserts no rubric phrase appears in any mayor prompt, and the mayor code has no import path to the judge. Judged scores are reported beside the deterministic scoreboard and never summed into it. Both judges are models from labs other than the mayors', on purpose.</p>
+      <h3>This term · ${NAMES[e.mayor] || e.mayor}, term ${e.term + 1}, ended by ${e.ended}</h3>
+      <table class="j"><tr><th>criterion (0–10)</th><th>formula scoreboard</th><th>Claude judge</th><th>TypeSafe judge</th></tr>${crit.map(row).join("")}<tr><th>total</th><th>${f1(sb.total)}</th><th>${j ? f1(j.total) : "not run"}</th><th>${t ? f1(t.total) : "not run"}</th></tr></table>
+      ${e.judge?.verdict ? `<h3>The Claude judge's verdict</h3><p class="lead" style="font-size:13px">${e.judge.verdict}</p>` : e.judge?.error ? `<p class="lead" style="font-size:13px;color:var(--bad)">Claude judge error: ${e.judge.error}</p>` : ""}
+      <h3>Across the whole file · mean total per mayor, and rank</h3>
+      <table class="j"><tr><th>mayor</th><th>formula</th><th>Claude judge</th><th>TypeSafe judge</th></tr>${aggRows}</table>
+      ${biasText}
+      <h3>Why three</h3><p class="lead" style="font-size:13px">The formula is reproducible and is our opinion of what a good mayor is, written as arithmetic. The Claude judge reads the whole trajectory against six paragraphs of prose and names the decision that mattered most. TypeSafe is a machine-native evaluator: each criterion is a scored question with a six-rung legend, answered with a calibrated confidence. Low confidence marks the criteria where the trajectory alone does not settle the answer.</p>
+      ${anyJudge ? "" : `<p class="lead" style="font-size:13px;color:var(--muted)">Judges have not run on this file yet: <code>.venv/bin/python -m judge.rejudge runs/&lt;file&gt;.jsonl</code></p>`}`;
   }
 
   // ---------- corner graph: the memory as nodes ----------

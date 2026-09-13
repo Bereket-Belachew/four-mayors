@@ -20,10 +20,12 @@ Everything below exists to make this line true. -->
 - [x] Citizens live the debt (world rules): austerity, debt/deficit unhappiness, credit limit, job flight. 17 tests.
 - [x] Callout windows (web/callouts.js): ambient insets with leader lines for the smaller moments; synthesized SFX off by default.
 - [x] Hero panel (web/hero.js): rotating animated mayor figure + true trait bars.
+- [x] Explain drawer (web/explain.js, 21:30–22:40): corner living memory graph (click → drawer). Tabs: Agent (mayor in a ring of 12 actions, real counts, toolset gaps explained) · Loop (two-ring track + marble; Caesar's outer ring open, Bureaucrat's check missing; prompt-input stack; the gate's verdicts from memory_diff; Weave link) · World (laws as cards from `web/data/world.json`, generated from the engine; do-nothing / housing-spam / best-script sparklines; same-seed hash) · Judges (formula vs Claude vs TypeSafe per term, mean + rank per mayor, who each judge favours). Supersedes tech.js (file kept, no longer loaded).
+- [x] Claude judge bug: Sonnet 5 spends the budget thinking, JSON was truncated → zeros. max_tokens 3000 + salvage parser.
 - [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
 ## TODO after the isometric page (logged 2026-09-12 16:35, his ask)
-- [ ] TypeSafe as a second judge (rubric criteria as `score` questions; compare with formula + Claude). ~30 min. Then maybe a System-One Caesar (classification mayor) as a provider benchmark.
+- [x] TypeSafe as a second judge (`judge/typesafe_judge.py`: six `score` questions with six-rung legends, ×2 to 0–10, confidence kept; `judge/rejudge.py` runs both judges over a run file in place). Ran over `runs/demo-debt-rules.jsonl`. System-One Caesar: still optional.
 - [ ] Taxes scaled by service quality (tax penalty shrinks when services are good). 2 lines + WORLD-RULES sentence.
 - [ ] Environmentalist (Dr. Nadia) as a third consultant, bias = mirror of the industrialist.
 - [ ] AGI House sign-in + participant survey (Bereket).

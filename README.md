@@ -48,5 +48,5 @@ marimo edit analysis/compare.py                                        # compare
 
 ## Stack
 
-W&B Weave (every year, memory read/write, judge call is a traced op; rubric as an Evaluation) · marimo (analysis) ·
-OpenAI GPT 5.6 Luna for the mayors, Claude for the judge · plain Python, no framework · static HTML replay, no server.
+W&B Weave (every year, memory read/write, both judge calls are traced ops) · TypeSafe AI System One (`jev-latest`) as the second judge: the six rubric criteria as scored questions with legends, answered with calibrated confidence · marimo (analysis) ·
+OpenAI GPT 5.6 Luna for the mayors, Claude Sonnet 5 for the first judge · plain Python, no framework · static HTML replay + a small local server for talk-to-a-citizen, run-from-web and narration.
