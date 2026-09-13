@@ -33,7 +33,7 @@ export function initHero(container) {
   const canvas = host.querySelector("canvas");
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50); camera.position.set(0, 1.35, 4.2); camera.lookAt(0, 1.05, 0);
+  camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50); camera.position.set(0, 1.5, 4.9); camera.lookAt(0, 1.0, 0);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
   const key = new THREE.DirectionalLight(0xfff1dd, 1.6); key.position.set(2, 4, 3); scene.add(key);
   const rim = new THREE.DirectionalLight(0x60a5fa, 0.8); rim.position.set(-3, 2, -2); scene.add(rim);
@@ -63,7 +63,7 @@ export async function setHero(ep) {
     if (figure) scene.remove(figure);
     figure = g.scene.clone(true);
     const box = new THREE.Box3().setFromObject(figure); const size = box.getSize(new THREE.Vector3());
-    const s = 2.0 / Math.max(size.y, 0.01); figure.scale.setScalar(s);
+    const s = 1.9 / Math.max(size.y, 0.01); figure.scale.setScalar(s);
     const box2 = new THREE.Box3().setFromObject(figure); figure.position.y = -box2.min.y;
     scene.add(figure);
     mixer = new THREE.AnimationMixer(figure);

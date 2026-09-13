@@ -17,6 +17,10 @@ Everything below exists to make this line true. -->
 - [x] How-it-works overlay (web/tech.js): loop diagram, outside-the-loop graders, cabinet of agents, guards, live memory diff.
 - [x] Run from the web (web/runpanel.js + ask_server /run /status /runs): live per-year progress, past run files selectable.
 - [x] City hall reserved at the centre lot on all pages.
+- [x] Citizens live the debt (world rules): austerity, debt/deficit unhappiness, credit limit, job flight. 17 tests.
+- [x] Callout windows (web/callouts.js): ambient insets with leader lines for the smaller moments; synthesized SFX off by default.
+- [x] Hero panel (web/hero.js): rotating animated mayor figure + true trait bars.
+- [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
 ## TODO after the isometric page (logged 2026-09-12 16:35, his ask)
 - [ ] TypeSafe as a second judge (rubric criteria as `score` questions; compare with formula + Claude). ~30 min. Then maybe a System-One Caesar (classification mayor) as a provider benchmark.
