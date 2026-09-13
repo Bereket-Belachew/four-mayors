@@ -123,6 +123,8 @@ export function planCallouts(ep, year, lotMeta, N, transitions = []) {
     else if (e.variable === "parks") out.push({ kind: "good", spot: lot("park") || hall, play: "picnic", title: "A park opens", text: `Ordered in year ${e.cause_year}. It absorbs a share of the air's pollution.`, sfx: "chime", priority: 30 });
   }
   // 3. a loan, taken or refused
+  const rec_ = rec.events.find(e => e.cause_action === "recession");
+  if (rec_) out.push({ kind: "bad", spot: lot("factory") || hall, play: "workers", title: "Recession", text: `Orders dry up. ${Math.round(-rec_.delta)} jobs gone this year; unemployment ${Math.round(100 * (s.unemployment || 0))}%. Every term gets one. What matters is how fast the city climbs back.`, sfx: "thud", priority: 58 });
   const refused = rec.ignored.find(i => /lenders refuse/.test(i.why));
   if (refused) out.push({ kind: "bad", spot: hall, play: "steps", title: "Lenders refuse", text: refused.why.replace(/^lenders refuse: /, ""), sfx: "thud", priority: 60 });
   const loan = rec.events.find(e => e.cause_action === "borrow" && e.variable === "debt" && e.cause_year === year);

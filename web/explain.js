@@ -189,13 +189,14 @@
     const spark = (ex, key, color) => { const s = ex.series[key]; const min = Math.min(...s), max = Math.max(...s), rng = max - min || 1; const pts = s.map((v, i) => `${(i / (s.length - 1)) * 100},${64 - ((v - min) / rng) * 56 - 4}`).join(" "); return `<svg viewBox="0 0 100 64" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; };
     const ex = world.examples;
     const sparks = ["nothing", "spam", "best"].map(k => `<div><b>${ex[k].label}</b>${spark(ex[k], "population", "#1c1c1e")}<span class="sc">population · ended ${ex[k].ended} after ${ex[k].years} years · score ${ex[k].score} of 60</span>${spark(ex[k], "treasury", "#0a5cff")}<span class="sc">treasury</span></div>`).join("");
-    body.innerHTML = `<h2>The world is a machine</h2><p class="lead">Seven numbers, eight levers, four information actions, and one step function. Same seed and same actions give the same city, byte for byte, on any machine. Nothing in it is a model: the consultants' forecasts are computed by simulating a quiet year, then biased on purpose.</p>
+    body.innerHTML = `<h2>The world is a machine</h2><p class="lead">Seven numbers, eight levers, four information actions, and one step function. Same seed and same actions give the same city, byte for byte, on any machine. Nothing in it is a model: the consultants' forecasts are computed by simulating a quiet year, then biased on purpose. Every rule was checked against published city models and the wellbeing research; the comparison is in <code>docs/research/world-models.md</code>.</p>
       ${law ? `<div class="law">${law}</div>` : ""}
       <h3>The seven numbers</h3><div class="cards">${num}</div>${lawFor(world.numbers)}
       <h3>The eight levers · same for every mayor</h3><div class="cards">${lev}</div>${lawFor(world.levers)}
       <h3>Information actions · the toolset differs per mayor</h3><div class="cards">${info}</div>${lawFor(world.info_actions)}
       <h3>Evidence the laws bite</h3><div class="spark">${sparks}</div>
       <p class="lead" style="font-size:13px;margin-top:10px"><span class="pill ok">✓ same seed twice → identical hash ${ex.same_seed_twice.hash}</span><span class="pill">a term ends: ${world.ends.join(" · ")}</span></p>
+      ${world.recession ? `<h3>One recession a term</h3><p class="lead" style="font-size:13px">${world.recession.text}</p>` : ""}
       <h3>Consequences land late</h3><p class="lead" style="font-size:13px">Housing and parks take a year, factories and transit two. Every change to a number is an event that remembers the decision and the year that caused it. That log is what the Reformer reads at the end of a term, and what the chronicler narrates.</p>`;
     body.querySelectorAll(".card").forEach(c => c.onclick = () => { const top = body.scrollTop; pick = c.dataset.k; renderWorld(e).then(() => { body.scrollTop = top; }); });
   }

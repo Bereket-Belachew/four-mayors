@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789279517";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789279517";
-import { initHero, setHero } from "./hero.js?v=1789279517";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789321351";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789321351";
+import { initHero, setHero } from "./hero.js?v=1789321351";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
