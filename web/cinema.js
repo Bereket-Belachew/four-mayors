@@ -172,8 +172,8 @@ function ensureDom(game) {
     @keyframes crack { 0%{transform:none} 30%{transform:rotate(-1.5deg) scale(1.02)} 60%{transform:rotate(1.5deg)} 100%{transform:rotate(0) scale(.98); opacity:.55; text-decoration:line-through} }
     #cinema .counter { position:absolute; right:4%; bottom:16%; background:#7a1010; color:#fff; font:700 28px/1 ui-monospace, Menlo, monospace; padding:10px 14px; border-radius:8px; border:2px solid #f87171; }
     #cinema .counter small { display:block; font:600 11px/1.2 system-ui; letter-spacing:.6px; margin-bottom:6px; color:#fca5a5; }
-    #cinema.opening .title { left:0; right:0; top:22%; text-align:center; } #cinema.opening .title .t { font-size:38px; }
-    #cinema.opening .lines { left:14%; right:14%; bottom:auto; top:36%; text-align:center; font-size:19px; }
+    #cinema.opening .title { left:0; right:0; top:18%; text-align:center; } #cinema.opening .title .t { font-size:38px; } #cinema.opening .title .sub { display:none; }
+    #cinema.opening .lines { left:12%; right:12%; bottom:auto; top:40%; text-align:center; font-size:19px; }
     #cinema.opening .lines p { margin:10px 0; }
     #cinema .skip { position:absolute; right:3%; bottom:3%; pointer-events:auto; background:rgba(17,19,24,.85); color:#e8e8ea; border:1px solid #2a2f3a; border-radius:6px; padding:6px 12px; cursor:pointer; }
     #game canvas.graded { filter: saturate(.45) contrast(1.08) brightness(.92); transition: filter .8s; }
