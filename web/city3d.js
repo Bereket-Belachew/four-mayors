@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Cinema, planRecaps } from "./cinema.js";
+import { initCallouts, planCallouts, showCallout, renderCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -282,6 +283,10 @@ function setMode(m) {
   else { camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER); }
 }
 $("camOrbit").onclick = () => setMode("orbit"); $("camStreet").onclick = () => setMode("street");
+const sndBtn = document.createElement("button"); sndBtn.id = "sndBtn"; sndBtn.textContent = "🔇"; sndBtn.title = "sound effects (off by default)"; $("togPanel").after(sndBtn);
+sndBtn.onclick = () => { setAudio(!audioEnabled()); sndBtn.textContent = audioEnabled() ? "🔊" : "🔇"; if (audioEnabled()) playSfx("chime"); };
+const coBtn = document.createElement("button"); coBtn.id = "coBtn"; coBtn.textContent = "🗨 callouts"; coBtn.className = "sel"; coBtn.title = "small windows with a line to the spot, for the smaller moments"; sndBtn.after(coBtn);
+window.calloutsOn = true; coBtn.onclick = () => { window.calloutsOn = !window.calloutsOn; coBtn.classList.toggle("sel", window.calloutsOn); };
 $("togChamber").onclick = () => { document.body.classList.toggle("no-chamber"); setTimeout(resize, 50); };
 $("togPanel").onclick = () => { document.body.classList.toggle("no-panel"); setTimeout(resize, 50); };
 if (innerWidth < 1100) document.body.classList.add("no-chamber");
@@ -330,11 +335,13 @@ function animate() {
   for (const p of smokeGroup.children) { p.userData.t += dt * 0.35; if (p.userData.t > 1) p.userData.t = 0; const t = p.userData.t; p.position.set(p.userData.x + t * 0.35, 1.35 + t * 0.9, p.userData.z + t * 0.1); p.scale.setScalar(0.12 + t * 0.35); p.material.opacity = 0.5 * (1 - t); }
   for (const o of cityGroup.children) if (o.userData.fade !== undefined) { o.userData.fade -= dt * 0.6; o.material.opacity = Math.max(0, o.userData.fade); if (o.userData.fade <= 0) { cityGroup.remove(o); } }
   renderer.render(scene, camera);
+  renderCallouts();
   requestAnimationFrame(animate);
 }
 animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
-window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep;
+initCallouts({ renderer, scene, camera, game, N });
+window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.showCallout = showCallout;
 window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
 
 // ---------- council chamber (left): what the mayor saw, heard, decided, and why ----------
@@ -405,6 +412,7 @@ async function tick() {
     const rc = recaps.find(r => r.year === year);
     const autopause = !document.getElementById("ch-autopause") || document.getElementById("ch-autopause").checked;
     if (rc && autopause && cinema) { const was = playing; stop(); await cinema.play(rc, ep); if (was) play(); }
+    else if (window.calloutsOn !== false) { for (const c of planCallouts(ep, year, lotMeta, N)) showCallout({ ...c, year }); }
   } finally { ticking = false; }
 }
 function play() { if (playing) return stop(); playing = true; $("play").textContent = "❚❚ pause"; schedule(); }
