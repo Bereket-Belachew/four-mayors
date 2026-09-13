@@ -193,14 +193,17 @@ async function distress(s, sb, kinds) {
   ground.material.color.setHex(0x6e8a4a).lerp(new THREE.Color(0x8f8a55), pol);
   cityGroup.traverse(o => { if (o.isMesh && o.userData.isTree) { if (!o.userData.baseColor) o.userData.baseColor = o.material.color.clone(); o.material = o.material.clone(); o.material.color.copy(o.userData.baseColor).lerp(new THREE.Color(0x7a5a2a), pol * 0.8); } });
   const score = sb ? sb.total / 60 : 0.6;
-  const thriving = Math.min(1, Math.max(0, (score - 0.45) / 0.35)), failing = Math.min(1, Math.max(0, (0.5 - score) / 0.3));
+  const fiscalBad = sb ? Math.min(1, Math.max(0, (2.5 - sb.fiscal) / 2.5)) : 0, moodBad = sb ? Math.min(1, Math.max(0, (4 - sb.wellbeing) / 4)) : 0;
+  const failing = Math.min(1, Math.max((0.5 - score) / 0.3, fiscalBad * 0.9, moodBad, moneyBad ? 0.5 : 0, 0));
+  const thriving = failing > 0.2 ? 0 : Math.min(1, Math.max(0, (score - 0.45) / 0.35));
   sun.color.setHex(0xfff3e0).lerp(new THREE.Color(0xffc27a), thriving).lerp(new THREE.Color(0xbfc4cc), failing);
-  sun.intensity = 1.6 + 0.5 * thriving - 0.9 * failing; hemi.intensity = 0.9 - 0.3 * failing;
+  sun.intensity = 1.6 + 0.5 * thriving - 0.9 * failing; hemi.intensity = 0.9 - 0.3 * failing; lastFailing = failing;
 }
 
 let buildToken = 0, lotMeta = new Map(), prevKinds = null, currentTier = 3;
 let recaps = [];
 let cinema = null;
+let lastFailing = 0;
 async function rebuild(full = false) {
   if (!ep) return;
   const token = ++buildToken;
@@ -256,7 +259,7 @@ async function rebuild(full = false) {
   await distress(s, sbNow, kinds);
   // sky and fog by pollution
   const smog = Math.min(1, pollution / 100);
-  const sky = new THREE.Color().lerpColors(new THREE.Color(0x87b6d9), new THREE.Color(0xb59a5a), smog);
+  const sky = new THREE.Color().lerpColors(new THREE.Color(0x87b6d9), new THREE.Color(0xb59a5a), smog).lerp(new THREE.Color(0x6b7078), lastFailing * 0.8);
   scene.background = sky; scene.fog.color = sky; scene.fog.near = 30 - 22 * smog; scene.fog.far = 90 - 55 * smog;
   hemi.intensity = Math.min(hemi.intensity, 0.9 - 0.35 * smog); sun.intensity = Math.min(sun.intensity, 1.6 - 0.6 * smog);
   $("loading").style.display = "none";
