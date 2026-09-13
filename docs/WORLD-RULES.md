@@ -323,6 +323,27 @@ and then ended 1,590 in the red and scored below doing nothing. Revenue (405) eq
 year of slack) and cut services to 150 per level. Revert or change in `sim/params.py` if you
 disagree; the test `test_do_nothing_scores_below_a_reasonable_mayor` is the guard.
 
+### Citizens live the debt [decided 2026-09-12 ~19:20, his call]
+
+Before this, debt had one channel into the world: interest drained the treasury, and nothing
+connected the treasury to daily life until bankruptcy ended the term. A city 26,000 in debt
+had services at 84 and happiness at 70. Four rules fix that, all in `sim/params.py`:
+
+- **Austerity.** While the treasury is negative, services decay an extra 2 points a year per
+  1,000 of shortfall [austerity_decay_per_1000], capped at 8 [austerity_decay_cap]. The city
+  cannot pay its teachers. The event says so.
+- **Debt weighs on people.** The happiness target falls by 10 × (yearly interest per resident)
+  [debt_unhappiness_per_head], and by 3 per 1,000 of negative treasury
+  [deficit_unhappiness_per_1000]: unpaid wages, arrears, the mood of a town underwater.
+- **Lenders stop lending.** A loan is refused once total debt would exceed 5 years of tax
+  revenue [credit_limit_years] or 3,000 [credit_floor], whichever is higher. The refusal is
+  logged and the chronicler can stage it.
+- **Business leaves an over-indebted city.** 1% of jobs a year while over the limit
+  [debt_job_flight_rate].
+
+Test: the same borrow-every-year script with and without these rules; with them, lenders refuse,
+austerity events appear, and mean happiness over the term is at least 3 points lower.
+
 ---
 
 ## What would refute this design

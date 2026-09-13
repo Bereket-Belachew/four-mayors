@@ -104,6 +104,15 @@ class Params:
     buy_land_range: tuple[float, float] = (1, 10)
     demolish_refund: float = 0.0
 
+    # ---- debt is lived by the citizens (decided 2026-09-12 ~19:20) ---------
+    austerity_decay_per_1000: float = 2.0   # extra services decay per year per 1000 of NEGATIVE treasury (the city cannot pay teachers)
+    austerity_decay_cap: float = 8.0        # at most this much extra decay a year
+    debt_unhappiness_per_head: float = 10.0 # happiness target penalty per unit of yearly interest per resident (26k debt / 1380 people ≈ 1.5 → −15)
+    credit_limit_years: float = 5.0         # lenders refuse once debt exceeds this many years of tax revenue...
+    credit_floor: float = 3000.0            # ...but every city can borrow at least this much in total
+    deficit_unhappiness_per_1000: float = 3.0  # happiness target penalty per 1000 of negative treasury (unpaid wages, arrears)
+    debt_job_flight_rate: float = 0.01      # jobs leaving per year while over the credit limit
+
     # ---- services -----------------------------------------------------------
     services_decay: float = 4.0
 

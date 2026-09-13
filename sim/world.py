@@ -389,6 +389,11 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
             pay(spec["cost"] * amt, a.name, "subsidy")
             world.pending.append(Pending(fire, "jobs", p.subsidy_jobs * amt, a.name, year, "subsidized businesses hire"))
         elif a.name == "borrow":
+            revenue_now = s.tax_rate * s.jobs * p.wage
+            limit = max(p.credit_floor, p.credit_limit_years * revenue_now)
+            if s.debt + arg > limit:
+                ignored.append({"action": asdict(a), "why": f"lenders refuse: debt {round(s.debt)} + {round(arg)} would exceed the credit limit of {round(limit)} ({p.credit_limit_years:g} years of revenue)"})
+                continue
             s.treasury += arg
             s.debt += arg
             emit("treasury", arg, a.name, year, "loan received")
@@ -468,9 +473,14 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
     emit("pollution", new_p - s.pollution, "economy", year, note)
     s.pollution = new_p
 
-    # services decay
+    # services decay, plus austerity: a broke city cannot pay its teachers and nurses
     s.services = _clamp(s.services - p.services_decay, 0, 100)
     emit("services", -p.services_decay, "economy", year, "decay without funding")
+    if s.treasury < 0:
+        austerity = min(p.austerity_decay_cap, p.austerity_decay_per_1000 * (-s.treasury) / 1000)
+        if austerity > 0:
+            s.services = _clamp(s.services - austerity, 0, 100)
+            emit("services", -austerity, "borrow" if s.debt > 0 else "economy", year, "austerity: the city cannot pay its staff")
 
     # jobs churn
     churn = 0.0
@@ -480,6 +490,9 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
         cause = "set_tax"
     if s.services < p.services_flight_threshold:
         churn -= p.services_flight_rate * s.jobs
+    if s.debt > max(p.credit_floor, p.credit_limit_years * revenue):
+        churn -= p.debt_job_flight_rate * s.jobs
+        cause = "borrow"
     if churn:
         s.jobs = max(0.0, s.jobs + churn)
         emit("jobs", churn, cause, year, "businesses close")
@@ -491,7 +504,9 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
               + p.happiness_housing * _clamp(s.housing_ratio, lo, hi) - p.happiness_housing
               - p.happiness_pollution * s.pollution
               - p.tax_unhappiness * s.tax_rate
-              + p.happiness_services * s.services)
+              + p.happiness_services * s.services
+              - p.debt_unhappiness_per_head * (interest / max(s.population, 1.0))
+              - p.deficit_unhappiness_per_1000 * max(0.0, -s.treasury) / 1000)
     target = _clamp(target, 0, 100)
     dh = (target - s.happiness) * p.happiness_inertia + rng.uniform(-p.happiness_noise, p.happiness_noise)
     new_h = _clamp(s.happiness + dh, 0, 100)

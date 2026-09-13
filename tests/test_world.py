@@ -142,3 +142,19 @@ def test_parks_cannot_zero_pollution_against_factories():
     w = run_script(0, [[Action("build_park", {"count": 3})] for _ in range(4)])
     assert w.state.parks >= 10
     assert w.state.pollution > 0
+
+
+def test_citizens_live_the_debt():
+    """Same borrowing script, with and without the debt rules: with them, lenders eventually refuse,
+    austerity events appear, and the citizens are measurably less happy."""
+    from sim.params import DEFAULT
+    borrow = [[Action("borrow", {"amount": 2000}), Action("fund_services", {"level": 1})] for _ in range(20)]
+    with_rules = run_script(0, borrow)
+    without = run_script(0, borrow, params=DEFAULT.with_(austerity_decay_per_1000=0.0, debt_unhappiness_per_head=0.0,
+                                                          deficit_unhappiness_per_1000=0.0, credit_floor=1e9, credit_limit_years=1e9))
+    refused = [i for y in with_rules.history for i in y["ignored"] if "lenders refuse" in i["why"]]
+    assert refused, "lenders never refused"
+    austerity = [e for y in with_rules.history for e in y["events"] if "austerity" in e.get("note", "")]
+    assert austerity, "no austerity event"
+    mean = lambda w: sum(y["state"]["happiness"] for y in w.history) / len(w.history)
+    assert mean(with_rules) < mean(without) - 3, (mean(with_rules), mean(without))
