@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789275646";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789275646";
-import { initHero, setHero } from "./hero.js?v=1789275646";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789275979";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789275979";
+import { initHero, setHero } from "./hero.js?v=1789275979";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -22,6 +22,7 @@ async function loadDefault() {
   try { const r = await fetch(`../runs/${file}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = file; parse(await r.text()); const rf = document.getElementById('runFile'); if (rf && [...rf.options].some(o => o.value === file)) rf.value = file; } } catch (e) {}
 }
 function parse(text) {
+  timelines.clear();
   episodes = dedupe(text.split("\n").filter(Boolean).map(l => JSON.parse(l)));
   fill("seed", [...new Set(episodes.map(e => e.seed))].sort((a, b) => a - b));
   fill("term", [...new Set(episodes.map(e => e.term))].sort((a, b) => a - b));
@@ -93,6 +94,22 @@ function evolveKinds(prev, target) {
   return { kinds, transitions };
 }
 window.lastTransitions = [];
+// One timeline per episode: kinds[y] for y = 0..years, so play and the scrubber show the same city.
+const timelines = new Map();
+function kindsTimeline(e) {
+  if (timelines.has(e)) return timelines.get(e);
+  let seed = null;
+  if (e.inherited) { const prev = episodes.find(p => p.mayor === e.mayor && p.seed === e.seed && p.term === e.term - 1); if (prev) seed = kindsTimeline(prev).kinds[prev.years]; }
+  const kinds = [], transitions = [];
+  const first = tilesFor(stateAt(e, 0)).kinds;
+  let cur = seed ? evolveKinds(seed, first).kinds : first;
+  kinds.push(cur); transitions.push([]);
+  for (let y = 1; y <= e.years; y++) {
+    const ev = evolveKinds(cur, tilesFor(stateAt(e, y)).kinds);
+    cur = ev.kinds; kinds.push(cur); transitions.push(ev.transitions.map(t => ({ ...t, r: Math.floor(t.i / N), c: t.i % N })));
+  }
+  const tl = { kinds, transitions }; timelines.set(e, tl); return tl;
+}
 function hash(i, salt) { let h = (i * 2654435761 + salt * 40503) >>> 0; h ^= h >>> 13; h = (h * 1274126177) >>> 0; return h >>> 0; }
 const pick = (arr, i, salt) => arr[hash(i, salt) % arr.length];
 
@@ -253,10 +270,11 @@ async function rebuild(full = false) {
   const want = tilesFor(s);
   const { tier, pollution, population } = want;
   currentTier = tier;
+  const tl = kindsTimeline(ep);
+  const yi = Math.min(year, ep.years);
+  const kinds = tl.kinds[yi];
   const prev = full ? null : prevKinds;
-  const evolved = evolveKinds(prev, want.kinds);
-  const kinds = evolved.kinds;
-  window.lastTransitions = evolved.transitions.map(t => ({ ...t, r: Math.floor(t.i / N), c: t.i % N }));
+  window.lastTransitions = tl.transitions[yi] || [];
   // clear
   for (const g of [cityGroup, carGroup, smokeGroup]) { while (g.children.length) { const o = g.children.pop(); o.traverse?.(m => { if (m.isMesh && m.userData.ownGeom) m.geometry.dispose(); }); } }
   lotMeta = new Map();
