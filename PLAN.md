@@ -24,6 +24,15 @@ Everything below exists to make this line true. -->
 - [x] Claude judge bug: Sonnet 5 spends the budget thinking, JSON was truncated → zeros. max_tokens 3000 + salvage parser.
 - [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
+## Sunday morning (2026-09-13) — start here
+Submission 13:00 on the AGI House platform · judging 13:30 · awards 16:30. Everything below is in `runs/demo-debt-rules.jsonl` and the 3D page unless noted.
+1. Weave screenshots (year_decide, memory_write, review, both judge ops) into `docs/screens/`; README GIF + Weave links (README line 13 placeholder).
+2. Demo script with the real numbers (three graders table: Caesar 42.4/42.3/41.6 · Bureaucrat 40.2/40.5/44.4 · Reformer 42.0/40.3/42.4 · Populist 39.4/31.3/35.4). Rehearse twice.
+3. Record the <2-min clip (3D page: opening → callout → cinematic → explain drawer Loop tab → Judges tab).
+4. Strategist checkpoint (read-only) on the demo order and the sponsor list.
+5. Bereket only: AGI House sign-in + participant survey; submit by 12:30.
+Optional if ahead: marimo notebook refresh · reset bankruptcy grace period at term start (one param) · System-One Caesar.
+
 ## TODO after the isometric page (logged 2026-09-12 16:35, his ask)
 - [x] TypeSafe as a second judge (`judge/typesafe_judge.py`: six `score` questions with six-rung legends, ×2 to 0–10, confidence kept; `judge/rejudge.py` runs both judges over a run file in place). Ran over `runs/demo-debt-rules.jsonl`. System-One Caesar: still optional.
 - [ ] Taxes scaled by service quality (tax penalty shrinks when services are good). 2 lines + WORLD-RULES sentence.
