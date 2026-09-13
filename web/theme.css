@@ -53,8 +53,8 @@ header label { color: var(--muted); font-size: 13px; display: flex; gap: 6px; al
 
 /* panels */
 aside, #chamber { background: var(--bg); border-color: var(--hair) !important; }
-aside h2 { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-aside h2 .score { color: var(--ink); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 14px; }
+aside h2 { color: var(--muted); font-weight: 500; font-size: 13px; }
+aside h2 .score { color: var(--ink); font-weight: 600; font-size: 14px; white-space: nowrap; }
 .decision { background: var(--surface); border-radius: var(--radius-s); color: var(--ink-2); font-size: 12.5px; padding: 8px 10px; }
 .health { color: var(--muted); }
 .hb .ht { background: var(--surface-2); height: 5px; border-radius: 3px; }
@@ -73,11 +73,11 @@ aside h2 .score { color: var(--ink); font-weight: 600; text-transform: none; let
 #chMin { border-radius: 999px; }
 .bubble { background: var(--surface); border: none; color: var(--ink-2); box-shadow: 0 1px 2px rgba(28,28,30,.05); }
 .bubble.now { background: #fff; box-shadow: 0 0 0 1.5px var(--ink) inset, var(--shadow); opacity: 1; }
-.bubble .y { color: var(--muted); } .bubble .saw b { color: var(--ink); } .bubble .heard { color: #6b4fbb; } .bubble .did { color: var(--ink); } .bubble .why { color: var(--ink-2); } .bubble .memo { color: var(--accent); }
+.bubble .y { color: var(--muted); } .bubble .saw b { color: var(--ink); } .bubble .heard { color: #6b4fbb; } .bubble .did { color: var(--ink); font-weight: 600; } .bubble .why { color: var(--ink-2); } .bubble .memo { color: var(--accent); }
 
 /* hero */
 .hero-view { background: radial-gradient(ellipse at 50% 25%, #ffffff 0%, var(--surface-2) 70%) !important; border: none !important; box-shadow: var(--shadow); }
-.hero-plate { background: linear-gradient(to top, rgba(245,244,240,.96), rgba(245,244,240,0)) !important; }
+.hero-plate { background: linear-gradient(to top, rgba(245,244,240,.92) 55%, rgba(245,244,240,0)) !important; padding-top: 28px !important; }
 .hero-name { color: var(--ink) !important; } .hero-epithet { color: var(--muted) !important; }
 .hero-traits { color: var(--muted) !important; }
 .trait .bar { background: var(--surface-2) !important; height: 5px !important; }
