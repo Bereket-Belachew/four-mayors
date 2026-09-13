@@ -1,4 +1,6 @@
 # Four Mayors
+<img width="1960" height="728" alt="image" src="https://github.com/user-attachments/assets/1f5c72fb-e3c4-47f3-83ae-ae1234fec31c" />
+
 <img width="2078" height="1350" alt="image" src="https://github.com/user-attachments/assets/4558b712-5b63-4f92-a84b-7186232b3617" />
 <img width="2763" height="1399" alt="image" src="https://github.com/user-attachments/assets/9acd6a6f-8ffe-4f82-a4b9-0c5627f8f190" />
 
