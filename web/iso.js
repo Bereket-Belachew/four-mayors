@@ -258,4 +258,5 @@ $("freeze").onclick = () => { stop(); if (ep && window.chroniclerOpen) window.ch
 $("scrub").oninput = e => { stop(); year = +e.target.value; scene && scene.rebuild(true); render(); };
 $("seed").onchange = () => select(ep && ep.mayor);
 $("term").onchange = () => select(ep && ep.mayor);
+window.currentEp = () => ep;
 loadDefault();

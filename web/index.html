@@ -259,8 +259,10 @@ document.getElementById("seed").onchange = select;
 document.getElementById("term").onchange = select;
 document.getElementById("file").onchange = async e => { const f = e.target.files[0]; if (f) parse(await f.text()); };
 window.addEventListener("resize", render);
+window.currentEp = () => view[0] || null;
 loadDefault();
 </script>
 <script src="narrator.js"></script>
+<script src="tech.js"></script>
 </body>
 </html>
