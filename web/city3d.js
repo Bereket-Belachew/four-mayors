@@ -62,6 +62,37 @@ function tilesFor(s) {
   if (tier <= 1) for (let i = 0; i < N * N; i += 7) if (kinds[i] === "house" || kinds[i] === "shack") kinds[i] = "shuttered";
   return { kinds, tier, pollution: s.pollution, population: s.population };
 }
+// The picture has memory. tilesFor() says what the numbers *want* on each lot; evolveKinds()
+// lets residential lots move one rung a year (shack ↔ house ↔ tower, shuttered as a rung below
+// house), at most LOT_STEPS_PER_YEAR lots per year in a fixed order. Non-residential lots follow
+// the counts immediately. Returns the new kinds plus the transitions, so a tower emptying out is
+// a real event with a spot, not a citywide flip.
+const RES = ["shack", "shuttered", "house", "tower"];
+const LOT_STEPS_PER_YEAR = 3;
+function evolveKinds(prev, target) {
+  if (!prev) return { kinds: target.slice(), transitions: [] };
+  const kinds = target.slice(), transitions = [];
+  let budget = LOT_STEPS_PER_YEAR;
+  // fixed visiting order (same permutation the lots use), so the same trajectory draws the same city
+  const order = []; for (let k = 0; k < N * N; k++) order.push((k * 37) % (N * N));
+  for (const i of order) {
+    const a = prev[i], b = target[i];
+    if (a === b) continue;
+    const ra = RES.indexOf(a), rb = RES.indexOf(b);
+    if (ra >= 0 && rb >= 0) {
+      if (budget <= 0) { kinds[i] = a; continue; }            // no budget left: stay as you were
+      const step = ra < rb ? 1 : -1; kinds[i] = RES[ra + step]; budget--;
+      transitions.push({ i, from: a, to: kinds[i], dir: step > 0 ? "up" : "down" });
+    } else if (ra >= 0 && rb < 0) {
+      transitions.push({ i, from: a, to: b, dir: "replaced" });  // a home became a factory/park/etc: follows the counts
+    } else if (ra < 0 && rb >= 0) {
+      kinds[i] = RES[Math.min(rb, 2)];                            // new residential lot starts no higher than a house
+      transitions.push({ i, from: a, to: kinds[i], dir: "built" });
+    }
+  }
+  return { kinds, transitions };
+}
+window.lastTransitions = [];
 function hash(i, salt) { let h = (i * 2654435761 + salt * 40503) >>> 0; h ^= h >>> 13; h = (h * 1274126177) >>> 0; return h >>> 0; }
 const pick = (arr, i, salt) => arr[hash(i, salt) % arr.length];
 
@@ -219,9 +250,13 @@ async function rebuild(full = false) {
   if (!ep) return;
   const token = ++buildToken;
   const s = stateAt(ep, year);
-  const { kinds, tier, pollution, population } = tilesFor(s);
+  const want = tilesFor(s);
+  const { tier, pollution, population } = want;
   currentTier = tier;
   const prev = full ? null : prevKinds;
+  const evolved = evolveKinds(prev, want.kinds);
+  const kinds = evolved.kinds;
+  window.lastTransitions = evolved.transitions.map(t => ({ ...t, r: Math.floor(t.i / N), c: t.i % N }));
   // clear
   for (const g of [cityGroup, carGroup, smokeGroup]) { while (g.children.length) { const o = g.children.pop(); o.traverse?.(m => { if (m.isMesh && m.userData.ownGeom) m.geometry.dispose(); }); } }
   lotMeta = new Map();
