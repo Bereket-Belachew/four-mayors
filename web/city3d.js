@@ -335,6 +335,7 @@ function animate() {
 animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
 window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep;
+window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
 
 // ---------- council chamber (left): what the mayor saw, heard, decided, and why ----------
 const PORTRAIT = { caesar: "character-a", bureaucrat: "character-h", reformer: "character-e", populist: "character-m", reformer_shuffled: "character-e" };

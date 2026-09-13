@@ -259,4 +259,5 @@ $("scrub").oninput = e => { stop(); year = +e.target.value; scene && scene.rebui
 $("seed").onchange = () => select(ep && ep.mayor);
 $("term").onchange = () => select(ep && ep.mayor);
 window.currentEp = () => ep;
+window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) parse(await r.text()); } catch (e) {} };
 loadDefault();
