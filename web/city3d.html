@@ -37,9 +37,9 @@
   .bubble .did { color:var(--warn); margin:4px 0 2px; font-weight:500; }
   .bubble .why { color:var(--ink); }
   .bubble .memo { color:#93c5fd; margin-top:4px; font-size:11px; }
-  body.no-chamber { grid-template-columns:0 1fr 340px; } body.no-chamber #chamber { display:none; }
-  body.no-panel { grid-template-columns:300px 1fr 0; } body.no-panel aside { display:none; }
-  body.no-chamber.no-panel { grid-template-columns:0 1fr 0; }
+  body.no-chamber { grid-template-columns:1fr 340px; } body.no-chamber #chamber { display:none; }
+  body.no-panel { grid-template-columns:300px 1fr; } body.no-panel aside { display:none; }
+  body.no-chamber.no-panel { grid-template-columns:1fr; }
   @media (max-width: 1300px) { body { grid-template-columns:260px 1fr 300px; } }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
   aside h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
