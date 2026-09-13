@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789274408";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789274408";
-import { initHero, setHero } from "./hero.js?v=1789274408";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789274520";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789274520";
+import { initHero, setHero } from "./hero.js?v=1789274520";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -394,7 +394,7 @@ animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
 initCallouts({ renderer, scene, camera, game, N });
 initHero(document.querySelector("aside"));
-window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.showCallout = showCallout;
+window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.__dbg = () => ({ ticking, playing, year, orbit: orbit.enabled, transitions: (window.lastTransitions || []).length }); window.showCallout = showCallout;
 window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = name; const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
 
 // ---------- council chamber (left): what the mayor saw, heard, decided, and why ----------
@@ -469,7 +469,7 @@ async function tick() {
     if (rc && autopause && cinema) { clearCallouts(); const was = playing; stop(); await cinema.play(rc, ep); if (was) play(); }
     else if (window.calloutsOn !== false && !(cinema && cinema.playing)) {
       const cs = planCallouts(ep, year, lotMeta, N, window.lastTransitions || []);
-      if (cs.length) { const wasOrbit = orbit.enabled; orbit.enabled = false; await showCallout({ ...cs[0], year }); orbit.enabled = wasOrbit; } // the clock waits; the world keeps moving
+      if (cs.length) { const wasOrbit = orbit.enabled; orbit.enabled = false; try { await showCallout({ ...cs[0], year }); } catch (e) { console.error("callout failed", e); } finally { orbit.enabled = wasOrbit; } } // the clock waits; the world keeps moving
     }
   } finally { ticking = false; }
 }
