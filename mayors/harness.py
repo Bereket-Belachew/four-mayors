@@ -161,7 +161,7 @@ class Mayor:
     # ----- one term ------------------------------------------------------------
     @weave.op()
     def serve_term(self, seed: int, term_index: int, scenario: str | None = None, params=None,
-                   persist: bool = True) -> dict[str, Any]:
+                   persist: bool = True, on_year=None) -> dict[str, Any]:
         carry = self.city if (persist and term_index > 0) else None
         world = new_world(seed, scenario, params, carry=carry, term=term_index)
         memory_text = memory_read(self.memory)
@@ -176,6 +176,11 @@ class Mayor:
             rec["reasoning"] = decision["reasoning"]
             reasonings.append(decision["reasoning"])
             pending_loop_results = rec["loop_results"]
+            if on_year:
+                try:
+                    on_year(rec["year"], world.state.public(world.params))
+                except Exception:
+                    pass
         memory_before = self.memory.to_dict()
         diff = memory_write(self.memory, world.history, self._post_mortem, self._review)
         self.city = world.state.public(world.params)

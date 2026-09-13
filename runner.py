@@ -63,14 +63,15 @@ def _shuffle_lessons(mayor: Mayor, seed: int) -> None:
 
 
 def run_mayor(name: str, seed: int, terms: int, judge: bool, shuffled: bool,
-              scenario: str | None = None, params=None) -> list[dict[str, Any]]:
+              scenario: str | None = None, params=None, progress=None) -> list[dict[str, Any]]:
     label = name + ("_shuffled" if shuffled else "")
     mayor = Mayor(name, LLM(LLMConfig()))
     out = []
     for t in range(terms):
         if shuffled:
             _shuffle_lessons(mayor, seed)
-        ep = mayor.serve_term(seed, t, scenario, params)
+        ep = mayor.serve_term(seed, t, scenario, params,
+                              on_year=(lambda y, st, _t=t: progress(name, seed, _t, y, st)) if progress else None)
         ep["mayor"] = label
         ep["param_overrides"] = {k: getattr(params, k) for k in vars(params)} if params else {}
         ep["scoreboard"] = score_trajectory(ep["history"], ep["ended"])

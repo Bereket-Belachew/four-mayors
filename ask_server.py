@@ -1,4 +1,9 @@
-"""Freeze-and-ask: a tiny local server so the replay page can put a question to someone in the city.
+"""Freeze-and-ask + run-from-the-web: a tiny local server for the replay pages.
+
+GET  /runs            list run files under runs/
+POST /run             start a sweep in a background thread: {mayors, seeds, terms, hard_starts, label}
+GET  /status?id=...   progress of a job (per mayor x seed: term, year, key numbers), done episodes, errors
+GET  /jobs            all jobs this session
 
 The page is static and must never hold an API key, so this process does the model call.
 POST /ask  {"character": "worker|mayor|industrialist|shopkeeper", "question": "...",
@@ -14,7 +19,8 @@ from __future__ import annotations
 import json
 import os
 import sys
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading, time, uuid
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -109,6 +115,71 @@ class Asker:
 
 ASKER: Asker | None = None
 
+# ---------------------------------------------------------------------------
+# Runs from the web: start a sweep in a thread, report progress, list run files.
+# ---------------------------------------------------------------------------
+RUNS_DIR = Path("runs")
+JOBS: dict[str, dict[str, Any]] = {}
+
+
+def start_run(spec: dict[str, Any]) -> str:
+    from concurrent.futures import ThreadPoolExecutor
+    from judge.scoreboard import score_trajectory
+    from runner import run_mayor
+    from sim.params import scenario_for
+
+    job_id = uuid.uuid4().hex[:8]
+    mayors = [m for m in spec.get("mayors", ["caesar", "reformer"]) if m in ("caesar", "bureaucrat", "reformer", "populist")] or ["caesar"]
+    seeds = [int(x) for x in spec.get("seeds", [0])][:4]
+    terms = max(1, min(4, int(spec.get("terms", 1))))
+    hard = bool(spec.get("hard_starts", True))
+    label = str(spec.get("label", "")).strip()[:40] or time.strftime("%H%M%S")
+    out_file = RUNS_DIR / f"web-{time.strftime('%Y%m%d-%H%M%S')}-{label}.jsonl"
+    job = {"id": job_id, "state": "running", "started": time.time(), "file": out_file.name, "progress": {}, "done": [], "errors": [],
+           "spec": {"mayors": mayors, "seeds": seeds, "terms": terms, "hard_starts": hard}}
+    JOBS[job_id] = job
+
+    def progress(name, seed, term, year, st):
+        job["progress"][f"{name}:{seed}"] = {"mayor": name, "seed": seed, "term": term, "year": year, "state": {k: st[k] for k in ("population", "treasury", "debt", "happiness", "pollution")}}
+
+    def work():
+        try:
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                futs = {ex.submit(run_mayor, m, sd, terms, False, False, scenario_for(sd) if hard else None, None, progress): (m, sd) for m in mayors for sd in seeds}
+                for f in futs:
+                    m, sd = futs[f]
+                    try:
+                        eps = f.result()
+                    except Exception as e:
+                        job["errors"].append(f"{m} seed {sd}: {e}")
+                        continue
+                    with out_file.open("a") as fh, (RUNS_DIR / "runs.jsonl").open("a") as main:
+                        for ep in eps:
+                            ep["scoreboard"] = score_trajectory(ep["history"], ep["ended"])
+                            ep["scoreboard_by_year"] = [score_trajectory(ep["history"][:i], ep["ended"] if i == len(ep["history"]) else "running") for i in range(1, len(ep["history"]) + 1)]
+                            ep["run_file"] = out_file.name
+                            line = json.dumps(ep) + "\n"
+                            fh.write(line); main.write(line)
+                            job["done"].append({"mayor": ep["mayor"], "seed": ep["seed"], "term": ep["term"], "score": ep["scoreboard"]["total"], "ended": ep["ended"]})
+            job["state"] = "done"
+        except Exception as e:
+            job["state"] = "failed"; job["errors"].append(str(e))
+        job["finished"] = time.time()
+
+    threading.Thread(target=work, daemon=True).start()
+    return job_id
+
+
+def list_runs() -> list[dict[str, Any]]:
+    out = []
+    for f in sorted(RUNS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            n = sum(1 for l in f.open() if l.strip())
+        except Exception:
+            n = 0
+        out.append({"file": f.name, "episodes": n, "modified": int(f.stat().st_mtime)})
+    return out
+
 
 class Handler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
@@ -121,15 +192,38 @@ class Handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def _json(self, obj: Any, code: int = 200) -> None:
+        body = json.dumps(obj).encode()
+        self.send_response(code); self._cors()
+        self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body)))
+        self.end_headers(); self.wfile.write(body)
+
+    def do_GET(self) -> None:  # noqa: N802
+        from urllib.parse import parse_qs, urlparse
+        u = urlparse(self.path)
+        if u.path == "/runs":
+            return self._json({"runs": list_runs()})
+        if u.path == "/status":
+            jid = parse_qs(u.query).get("id", [""])[0]
+            job = JOBS.get(jid)
+            return self._json(job or {"error": "unknown job"}, 200 if job else 404)
+        if u.path == "/jobs":
+            return self._json({"jobs": [{k: v for k, v in j.items() if k != "progress"} for j in JOBS.values()]})
+        self._json({"error": "not found"}, 404)
+
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/ask":
-            self.send_response(404)
-            self._cors()
-            self.end_headers()
-            return
         n = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(n) or b"{}"
+        if self.path == "/run":
+            try:
+                jid = start_run(json.loads(raw))
+                return self._json({"id": jid, "job": JOBS[jid]})
+            except Exception as e:
+                return self._json({"error": str(e)}, 400)
+        if self.path != "/ask":
+            return self._json({"error": "not found"}, 404)
         try:
-            payload = json.loads(self.rfile.read(n) or b"{}")
+            payload = json.loads(raw)
             answer = ASKER.ask(payload) if ASKER else "(server not ready)"
             body = json.dumps({"answer": answer}).encode()
             self.send_response(200)
@@ -151,4 +245,4 @@ if __name__ == "__main__":
         weave.init(os.getenv("WEAVE_PROJECT", "coreweave-hacks"))
     ASKER = Asker()
     print(f"freeze-and-ask server on http://localhost:{PORT}/ask  (provider={os.getenv('MAYOR_PROVIDER', 'mock')})")
-    HTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
