@@ -172,6 +172,9 @@ function ensureDom(game) {
     @keyframes crack { 0%{transform:none} 30%{transform:rotate(-1.5deg) scale(1.02)} 60%{transform:rotate(1.5deg)} 100%{transform:rotate(0) scale(.98); opacity:.55; text-decoration:line-through} }
     #cinema .counter { position:absolute; right:4%; bottom:16%; background:#7a1010; color:#fff; font:700 28px/1 ui-monospace, Menlo, monospace; padding:10px 14px; border-radius:8px; border:2px solid #f87171; }
     #cinema .counter small { display:block; font:600 11px/1.2 system-ui; letter-spacing:.6px; margin-bottom:6px; color:#fca5a5; }
+    #cinema.opening .title { left:0; right:0; top:22%; text-align:center; } #cinema.opening .title .t { font-size:38px; }
+    #cinema.opening .lines { left:14%; right:14%; bottom:auto; top:36%; text-align:center; font-size:19px; }
+    #cinema.opening .lines p { margin:10px 0; }
     #cinema .skip { position:absolute; right:3%; bottom:3%; pointer-events:auto; background:rgba(17,19,24,.85); color:#e8e8ea; border:1px solid #2a2f3a; border-radius:6px; padding:6px 12px; cursor:pointer; }
     #game canvas.graded { filter: saturate(.45) contrast(1.08) brightness(.92); transition: filter .8s; }
     #game canvas.warm { filter: saturate(1.15) sepia(.12) brightness(1.03); transition: filter .8s; }
@@ -182,6 +185,22 @@ function ensureDom(game) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+export function openingRecap(ep) {
+  const m = nice(ep.mayor), H = ep.history, s0 = H[0].state_before;
+  const EP = { caesar: "the Decider", bureaucrat: "the Consulter", reformer: "the Learner", populist: "the Beloved", reformer_shuffled: "shuffled control" }[ep.mayor] || "";
+  const PR = { caesar: "He decides alone and fast. He consults no one, and he never looks back.", bureaucrat: "He believes thorough government is good government. He keeps every record and weighs every voice.", reformer: "He judges himself by results and is willing to be wrong. What he learned last term outranks what anyone tells him this term.", populist: "He serves the people and wants them to love him for it. A policy they hate is a bad policy.", reformer_shuffled: "The Reformer's memory, with its rules shuffled. A control." }[ep.mayor] || "";
+  const L = [PR];
+  L.push(`${ep.inherited ? `Term ${(ep.term ?? 0) + 1}` : "His first term"} in the ${(ep.scenario || "default").replace("_", " ")} city.`);
+  L.push(`${s0.population} people. ${s0.jobs} jobs. Treasury ${s0.treasury}, debt ${s0.debt}. Pollution ${s0.pollution}. Happiness ${s0.happiness}.`);
+  const mem = ep.memory_before;
+  if (!ep.inherited || !mem || mem.terms_served === 0) L.push(`He knows nothing of this city yet.`);
+  else if (mem.policy === "none") L.push(`He wrote nothing down last time. This term begins as if it were his first.`);
+  else if (mem.policy === "opinion_log") L.push(`He carries ${mem.opinion_log_entries} records of advice from earlier terms. None were ever checked against what happened.`);
+  else { const ls = mem.lessons || []; L.push(`He carries ${ls.length} lesson${ls.length === 1 ? "" : "s"} from earlier terms.${ls[0] ? ` Among them: “${ls[0].rule}”` : ""}`); }
+  L.push(`Twenty years. Then the reckoning.`);
+  return { year: 0, type: "term_open", title: `${m} · ${EP}`, lines: L, isOpening: true };
+}
 
 export class Cinema {
   constructor(ctx) {
@@ -358,6 +377,14 @@ export class Cinema {
     for (const a of added.slice(0, 2)) { this.card(d, "new", "new lesson", `“${a}”`); await sleep(350); }
     for (let i = 2; i < recap.lines.length; i++) await this.say(L, recap.lines[i]);
     const s = ep.final_state; await this.say(L, `The next mayor inherits: debt ${s.debt}, pollution ${s.pollution}, ${s.factories} factories, ${s.population} people.`);
+  }
+  async stage_term_open(recap, ep, L, d) {
+    const { N } = this.ctx;
+    d.classList.add("opening"); d.querySelector(".skip").textContent = "Begin ▸";
+    this.ctx.camera.position.set(N / 2 + 16, 13, N / 2 + 16); this.ctx.orbit.target.set(N / 2, 0, N / 2);
+    this.flyTo(new THREE.Vector3(N / 2 + 10, 8, N / 2 + 11), new THREE.Vector3(N / 2, 0.5, N / 2), 16);
+    for (const l of recap.lines) await this.say(L, l, 2600);
+    d.classList.remove("opening"); d.querySelector(".skip").textContent = "skip ▸";
   }
   async stage_quiet(recap, ep, L, d) {
     const { N } = this.ctx;

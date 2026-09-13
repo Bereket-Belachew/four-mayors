@@ -3,7 +3,7 @@
 // Also a tiny synthesized soundboard (off by default; toggle in the header).
 import * as THREE from "three";
 
-const INSET_W = 300, INSET_H = 190, MARGIN = 14, DURATION = 6500;
+const INSET_W = 300, INSET_H = 190, MARGIN = 14, DURATION = 4000;
 let R = null; // {renderer, scene, camera, game, N}
 let active = [];
 let svg = null, box = null, insetCam = null;
@@ -32,50 +32,64 @@ export function initCallouts(ctx) {
 
 // ---------- planning: which small moments deserve a window this year ----------
 const LEVER_WORDS = { build_factory: "a factory", build_park: "a park", build_housing: "new housing", fund_transit: "a transit line", fund_services: "services funding", subsidize_business: "business subsidies", borrow: "a loan" };
-export function planCallouts(ep, year, lotMeta, N) {
+export function planCallouts(ep, year, lotMeta, N, transitions = []) {
   const rec = ep.history[year - 1]; if (!rec) return [];
   const prev = year >= 2 ? ep.history[year - 2].state : ep.history[0].state_before, s = rec.state;
   const out = [];
   const lot = kind => { const ls = [...lotMeta.values()].filter(l => l.kind === kind); return ls[ls.length - 1] || null; };
   const hall = lot("hall") || { x: 5, z: 5 };
-  const refused = rec.ignored.find(i => /lenders refuse/.test(i.why));
-  if (refused) out.push({ kind: "bad", spot: hall, title: "Lenders refuse", text: refused.why.replace(/^lenders refuse: /, ""), sfx: "thud" });
-  const aust = rec.events.find(e => /austerity/.test(e.note || ""));
-  if (aust) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Austerity", text: `The city could not pay its staff. Services ${Math.round(aust.delta)} this year, on top of normal decay. Treasury ${s.treasury}.`, sfx: "thud" });
-  const loan = rec.events.find(e => e.cause_action === "borrow" && e.variable === "debt" && e.cause_year === year);
-  if (loan) out.push({ kind: "warn", spot: hall, title: `Borrowed ${Math.round(loan.delta)}`, text: `Debt is now ${s.debt}. Interest of about ${Math.round(s.debt * 0.08)} a year follows, forever.`, sfx: "cash" });
+  // 1. a building comes down: a tower emptied to a house, or a house shuttered
+  const down = transitions.filter(t => t.dir === "down");
+  if (down.length) { const t = down[0]; out.push({ kind: "bad", spot: { x: t.c, z: t.r }, title: t.from === "tower" ? "A tower empties out" : "Boarded up", text: `${down.length} building${down.length > 1 ? "s" : ""} downgraded this year. Occupancy ${Math.round(100 * s.population / Math.max(s.housing, 1))}%, happiness ${s.happiness}.`, sfx: "collapse", priority: 50 }); }
+  // 2. a factory or park opens
   for (const e of rec.events) {
     if (e.cause_action === "economy" || e.cause_year >= year) continue;
-    if (e.variable === "factories") out.push({ kind: "good", spot: lot("factory") || hall, title: "A factory opens", text: `Ordered in year ${e.cause_year}. +${Math.round(150 * e.delta)} jobs, and smoke every year from now on.`, sfx: "thud" });
-    else if (e.variable === "parks") out.push({ kind: "good", spot: lot("park") || hall, title: "A park opens", text: `Ordered in year ${e.cause_year}. It absorbs a share of the air's pollution, less for each park after it.`, sfx: "chime" });
-    else if (e.variable === "housing") out.push({ kind: "info", spot: lot("house") || hall, title: "New housing", text: `+${Math.round(e.delta)} homes, ordered in year ${e.cause_year}. People move in at half the empty units a year.`, sfx: "chime" });
-    else if (e.variable === "transit") out.push({ kind: "info", spot: lot("road") || hall, title: "A transit line opens", text: `Ordered in year ${e.cause_year}. A little cleaner air, a little more upkeep.`, sfx: "chime" });
+    if (e.variable === "factories") out.push({ kind: "good", spot: lot("factory") || hall, title: "A factory opens", text: `Ordered in year ${e.cause_year}. +${Math.round(150 * e.delta)} jobs, and smoke every year from now on.`, sfx: "thud", priority: 40 });
+    else if (e.variable === "parks") out.push({ kind: "good", spot: lot("park") || hall, title: "A park opens", text: `Ordered in year ${e.cause_year}. It absorbs a share of the air's pollution.`, sfx: "chime", priority: 30 });
   }
+  // 3. a loan, taken or refused
+  const refused = rec.ignored.find(i => /lenders refuse/.test(i.why));
+  if (refused) out.push({ kind: "bad", spot: hall, title: "Lenders refuse", text: refused.why.replace(/^lenders refuse: /, ""), sfx: "thud", priority: 60 });
+  const loan = rec.events.find(e => e.cause_action === "borrow" && e.variable === "debt" && e.cause_year === year);
+  if (loan) out.push({ kind: "warn", spot: hall, title: `Borrowed ${Math.round(loan.delta)}`, text: `Debt is now ${s.debt}. Interest of about ${Math.round(s.debt * 0.08)} a year follows, forever.`, sfx: "cash", priority: 35 });
+  // 4. austerity, or services collapsing
+  const aust = rec.events.find(e => /austerity/.test(e.note || ""));
+  if (aust) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Austerity", text: `The city could not pay its staff. Services ${Math.round(aust.delta)} on top of normal decay. Treasury ${s.treasury}.`, sfx: "thud", priority: 55 });
+  else if (s.services < 30 && prev.services >= 30) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Services collapse", text: `Services ${s.services}. Dumpsters on the corners, clinics closing.`, sfx: "thud", priority: 45 });
+  // 5. the crowd grows
   const dh = s.happiness - prev.happiness;
-  if (s.happiness < 50 && dh <= -3) out.push({ kind: "bad", spot: hall, title: "The crowd grows", text: `Happiness ${prev.happiness} → ${s.happiness}. More people outside city hall this year. Tax ${Math.round(s.tax_rate * 100)}%, services ${s.services}, pollution ${s.pollution}.`, sfx: "crowd" });
-  if ((s.unemployment || 0) >= 0.15 && (prev.unemployment || 0) < 0.15) out.push({ kind: "bad", spot: lot("empty") || hall, title: "Out of work", text: `Unemployment ${Math.round(s.unemployment * 100)}%. Containers appear on the empty lots.`, sfx: "crowd" });
-  if (s.services < 30 && prev.services >= 30) out.push({ kind: "bad", spot: lot("civic") || hall, title: "Services collapse", text: `Services ${s.services}. Dumpsters on the corners, clinics closing.`, sfx: "thud" });
-  return out.slice(0, 2);
+  if (s.happiness < 50 && dh <= -3) out.push({ kind: "bad", spot: hall, title: "The crowd grows", text: `Happiness ${prev.happiness} → ${s.happiness}. More people outside city hall. Tax ${Math.round(s.tax_rate * 100)}%, services ${s.services}, pollution ${s.pollution}.`, sfx: "crowd", priority: 65 });
+  out.sort((a, b) => b.priority - a.priority);
+  return out.slice(0, 1); // one at a time, never overwhelm
 }
 
 // ---------- showing ----------
 export function showCallout(c) {
-  if (!R) return;
-  const el = document.createElement("div"); el.className = `co ${c.kind}`;
-  el.innerHTML = `<div class="frame"></div><div class="cap"><b>${c.title}</b>${c.text}<br><small>year ${c.year ?? ""}</small></div>`;
-  box.appendChild(el);
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", c.kind);
-  const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"); dot.setAttribute("r", "5"); dot.setAttribute("class", c.kind);
-  svg.appendChild(line); svg.appendChild(dot);
-  const item = { ...c, el, line, dot, t0: performance.now(), angle: Math.random() * Math.PI * 2 };
-  active.push(item);
-  layout();
-  requestAnimationFrame(() => el.classList.add("in"));
-  playSfx(c.sfx);
-  setTimeout(() => { el.classList.remove("in"); setTimeout(() => remove(item), 400); }, c.duration || DURATION);
+  if (!R) return Promise.resolve();
+  return new Promise(resolve => {
+    const el = document.createElement("div"); el.className = `co ${c.kind}`;
+    el.innerHTML = `<div class="frame"></div><div class="cap"><b>${c.title}</b>${c.text}<br><small>year ${c.year ?? ""}</small></div>`;
+    box.appendChild(el);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", c.kind);
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"); dot.setAttribute("r", "5"); dot.setAttribute("class", c.kind);
+    svg.appendChild(line); svg.appendChild(dot);
+    // place the window in free space on the side of the screen nearest the spot, level with it
+    const W = R.game.clientWidth, H = R.game.clientHeight;
+    const p = new THREE.Vector3(c.spot.x, 0.5, c.spot.z).project(R.camera);
+    const sx = (p.x + 1) / 2 * W, sy = (-p.y + 1) / 2 * H;
+    const x = sx < W / 2 ? MARGIN : W - INSET_W - MARGIN;
+    const y = Math.max(MARGIN, Math.min(H - INSET_H - 96, sy - INSET_H / 2));
+    const item = { ...c, el, line, dot, t0: performance.now(), angle: Math.random() * Math.PI * 2, x, y, resolve };
+    active.push(item);
+    el.style.left = `${x}px`; el.style.top = `${y}px`;
+    requestAnimationFrame(() => el.classList.add("in"));
+    playSfx(c.sfx);
+    setTimeout(() => { el.classList.remove("in"); setTimeout(() => remove(item), 400); }, c.duration || DURATION);
+  });
 }
-function remove(item) { active = active.filter(a => a !== item); item.el.remove(); item.line.remove(); item.dot.remove(); layout(); }
-function layout() { active.forEach((a, i) => { a.el.style.left = `${MARGIN}px`; a.el.style.top = `${MARGIN + i * (INSET_H + 78)}px`; }); }
+function remove(item) { active = active.filter(a => a !== item); item.el.remove(); item.line.remove(); item.dot.remove(); item.resolve && item.resolve(); }
+export function clearCallouts() { for (const a of active.slice()) remove(a); }
+export function calloutsActive() { return active.length > 0; }
 
 // ---------- per-frame: render insets and draw leader lines ----------
 export function renderCallouts() {
@@ -89,7 +103,7 @@ export function renderCallouts() {
     const ang = a.angle + t * 0.25;
     insetCam.position.set(spot.x + Math.cos(ang) * 2.6, 1.7, spot.z + Math.sin(ang) * 2.6); insetCam.lookAt(spot);
     insetCam.aspect = INSET_W / INSET_H; insetCam.updateProjectionMatrix();
-    const x = MARGIN, yTop = MARGIN + i * (INSET_H + 78);
+    const x = a.x, yTop = a.y;
     const vx = Math.round(x * dpr), vy = Math.round((H - yTop - INSET_H) * dpr), vw = Math.round(INSET_W * dpr), vh = Math.round(INSET_H * dpr);
     renderer.setScissorTest(true); renderer.setScissor(vx, vy, vw, vh); renderer.setViewport(vx, vy, vw, vh);
     renderer.clear(true, true, false);
@@ -97,7 +111,7 @@ export function renderCallouts() {
     // leader line from the inset's right edge to the spot on the main view
     const p = spot.clone().project(camera);
     const sx = (p.x + 1) / 2 * W, sy = (-p.y + 1) / 2 * H;
-    a.line.setAttribute("x1", x + INSET_W); a.line.setAttribute("y1", yTop + INSET_H / 2);
+    a.line.setAttribute("x1", sx < x ? x : x + INSET_W); a.line.setAttribute("y1", yTop + INSET_H / 2);
     a.line.setAttribute("x2", sx); a.line.setAttribute("y2", sy);
     a.dot.setAttribute("cx", sx); a.dot.setAttribute("cy", sy);
     const visible = p.z < 1 && sx > 0 && sx < W && sy > 0 && sy < H;
@@ -125,5 +139,6 @@ export function playSfx(kind) {
     else if (kind === "cash") { tone(1320, 0.08, 0.12, "square"); setTimeout(() => tone(1760, 0.12, 0.12, "square"), 90); }
     else if (kind === "chime") { tone(880, 0.35, 0.1); setTimeout(() => tone(1108, 0.4, 0.08), 120); }
     else if (kind === "truck") { noise(1.0, 120, 0.35); tone(55, 1.0, 0.15, "sawtooth"); }
+    else if (kind === "collapse") { noise(0.9, 140, 0.55); tone(48, 0.9, 0.25, "triangle"); setTimeout(() => noise(0.5, 400, 0.25), 250); }
   } catch (e) {}
 }

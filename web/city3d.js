@@ -2,8 +2,8 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps } from "./cinema.js";
-import { initCallouts, planCallouts, showCallout, renderCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js";
 import { initHero, setHero } from "./hero.js";
 
 // ---------- data / controls (mirrors iso.js) ----------
@@ -466,11 +466,20 @@ async function tick() {
     year++; await rebuild(false); render();
     const rc = recaps.find(r => r.year === year);
     const autopause = !document.getElementById("ch-autopause") || document.getElementById("ch-autopause").checked;
-    if (rc && autopause && cinema) { const was = playing; stop(); await cinema.play(rc, ep); if (was) play(); }
-    else if (window.calloutsOn !== false) { for (const c of planCallouts(ep, year, lotMeta, N)) showCallout({ ...c, year }); }
+    if (rc && autopause && cinema) { clearCallouts(); const was = playing; stop(); await cinema.play(rc, ep); if (was) play(); }
+    else if (window.calloutsOn !== false && !(cinema && cinema.playing)) {
+      const cs = planCallouts(ep, year, lotMeta, N, window.lastTransitions || []);
+      if (cs.length) { const wasOrbit = orbit.enabled; orbit.enabled = false; await showCallout({ ...cs[0], year }); orbit.enabled = wasOrbit; } // the clock waits; the world keeps moving
+    }
   } finally { ticking = false; }
 }
-function play() { if (playing) return stop(); playing = true; $("play").textContent = "❚❚ pause"; schedule(); }
+const opened = new Set();
+async function play() {
+  if (playing) return stop();
+  const autopause = !document.getElementById("ch-autopause") || document.getElementById("ch-autopause").checked;
+  if (year === 0 && ep && cinema && autopause && !opened.has(ep)) { opened.add(ep); clearCallouts(); await cinema.play(openingRecap(ep), ep); }
+  playing = true; $("play").textContent = "❚❚ pause"; schedule();
+}
 function schedule() { timer = setTimeout(async () => { await tick(); if (playing) schedule(); }, 10000 / +$("speed").value); }
 function stop() { playing = false; clearTimeout(timer); $("play").textContent = "▶ play"; }
 window.stop3d = stop;
