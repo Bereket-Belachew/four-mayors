@@ -124,5 +124,11 @@ def judge_episode_typesafe(history: list[dict[str, Any]], ended: str, *, model: 
         a = answers.get(c, {})
         scores[c] = round(float(a.get("score", 0.0)) * 2.0, 2)  # legend 0..5 -> 0..10
         confidence[c] = round(float(a.get("confidence", 0.0)), 3)
+    # the rubric's rule for a city that stopped existing: keep only the share of the term it survived.
+    # TypeSafe answers six legends and has no notion of term length, so the rule is applied here, as arithmetic.
+    survived = 1.0 if ended == "horizon" else min(1.0, len(history) / 20)
+    if survived < 1.0:
+        for c in CRITERIA:
+            scores[c] = round(scores[c] * survived, 2)
     scores["total"] = round(sum(scores[c] for c in CRITERIA), 2)
-    return {"model": out.get("model", model), "scores": scores, "confidence": confidence, "usage": out.get("usage")}
+    return {"model": out.get("model", model), "scores": scores, "confidence": confidence, "survived": survived, "usage": out.get("usage")}

@@ -31,6 +31,12 @@ Everything below exists to make this line true. -->
 - Fixed on the way: Luna output ceiling killed a run (max_tokens 1200 → 4000 + retry). Run files were gitignored, so no demo file had ever reached GitHub: `!runs/demo-*.jsonl` now whitelisted.
 - Open: inherited bankruptcy — a term that starts below −3000 dies in year 2 (Caesar t3 ×2, Populist t2/t3 ×4). One-param fix (reset the broke streak or a grace period at term start) if he wants terms 2–3 to mean something for the borrowers.
 
+## Sun 2026-09-13 11:10–11:50 — his two edits: bankruptcy is extreme; citizens speak from their stake
+- World: the day the city defaults, happiness −25 [bankruptcy_mood_shock]; inherited by the next term. Score: an early exit keeps years/20 of every criterion (rubric + formula + applied to TypeSafe as arithmetic). Housing trap: 18 → 6 of 60.
+- Freeze-and-ask: `_stakes()` in ask_server.py gives each character their own situation (worker: work first, clinic, rent, air; industrialist: losing money in a default, no staff when jobs outrun workers, tax, subsidies; Dr. Nadia: pollution number + trend, never reassured by mood; Rosa: who has money, who is leaving; mayor owns a default). Page sends prev_state and `ended` on the last year.
+- Final demo file `runs/demo-science.jsonl` (24 terms). Means formula/Claude/TypeSafe: Caesar 16.2/15.3/— · Bureaucrat 28.5/27.7/— · Reformer 30.1/27.5/— · Populist 17.3/16.2/— (TypeSafe means in git log). Full terms score 29–47, bankrupt terms 2–26. Reformer city 0 climbs 37.6 → 44.2 → 46.9 across three terms with lessons 1 held/1 failed then 3 held/0 failed: the double-loop story in one city. Reformer city 1 inherits 3,200 of debt and dies in term 2.
+- Bigger now: 6 of 24 terms are two-year stubs (inherited treasury below −3000). Grace period at term start is still his call.
+
 ## Later: the science article
 - Later, when the world is a good scientific representation: a professional 'The science behind our world' article, written like an Aeon essay (human, well-written, no jargon), with the research sources as an appendix. Draft material: docs/research/world-models.md. (his ask, Sun 2026-09-13 morning)
 
