@@ -217,23 +217,29 @@ $("camOrbit").onclick = () => setMode("orbit"); $("camStreet").onclick = () => s
 
 // ---------- hover -> talk button ----------
 const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2(); let hovered = null;
+let hideT = null;
+function hideTalkSoon() { clearTimeout(hideT); hideT = setTimeout(() => { $("talk").style.display = "none"; hovered = null; }, 450); }
 function hoverAt(e) {
+  if (e.target === $("talk") || $("talk").contains(e.target)) { clearTimeout(hideT); return; }
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
   const hits = ray.intersectObjects(cityGroup.children, true);
   let lot = null;
   for (const h of hits) { let o = h.object; while (o && !o.userData.lot) o = o.parent; if (o && o.userData.lot && !["road", "empty"].includes(o.userData.lot.kind)) { lot = o; break; } if (o) break; }
-  if (lot !== hovered) { hovered = lot; }
-  const talk = $("talk");
-  if (!hovered) { talk.style.display = "none"; return; }
+  if (!lot) { if (hovered) hideTalkSoon(); return; }   // left the building: keep the button up for a moment
+  clearTimeout(hideT);
+  hovered = lot;
   const meta = lotMeta.get(hovered); if (!meta) return;
   const p = new THREE.Vector3(meta.x, 1.9, meta.z).project(camera);
+  const talk = $("talk");
   talk.style.display = "block"; talk.style.left = ((p.x + 1) / 2 * rect.width) + "px"; talk.style.top = ((-p.y + 1) / 2 * rect.height) + "px";
   $("talkLabel").textContent = meta.label;
 }
-$("talk").onclick = () => { stop(); if (ep && window.chroniclerOpen) window.chroniclerOpen(ep, Math.max(1, year)); $("talk").style.display = "none"; };
-renderer.domElement.addEventListener("pointerleave", () => { $("talk").style.display = "none"; });
+$("talk").addEventListener("pointerenter", () => clearTimeout(hideT));
+$("talk").addEventListener("pointerleave", () => hideTalkSoon());
+$("talk").onclick = () => { clearTimeout(hideT); stop(); if (ep && window.chroniclerOpen) window.chroniclerOpen(ep, Math.max(1, year)); $("talk").style.display = "none"; hovered = null; };
+renderer.domElement.addEventListener("pointerleave", () => hideTalkSoon());
 
 // ---------- animate ----------
 const clock = new THREE.Clock();
