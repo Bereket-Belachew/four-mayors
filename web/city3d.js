@@ -180,7 +180,7 @@ async function distress(s, sb, kinds) {
   if (s.happiness < 45) {
     const n = Math.round(4 + (45 - s.happiness) / 4);
     for (let i = 0; i < n; i++) jobs.push(loadModel(MODELS.person[i % MODELS.person.length]).then(m => {
-      const o = m.root.clone(true); o.scale.setScalar(0.28 / Math.max(m.size.y, 0.01));
+      const o = m.root.clone(true); o.scale.setScalar(0.42 / Math.max(m.size.y, 0.01));
       const a = (i / n) * Math.PI * 1.2 - Math.PI * 0.1; o.position.set(5 + Math.cos(a) * (0.8 + (i % 2) * 0.25), 0, 5 + 0.7 + Math.sin(a) * 0.5); o.lookAt(5, 0, 5);
       const mx = new THREE.AnimationMixer(o); const clip = m.animations.find(x => x.name === (i % 3 ? "emote-no" : "idle")) || m.animations[0]; mx.clipAction(clip).play(); distressMixers.push(mx);
       distressGroup.add(o);

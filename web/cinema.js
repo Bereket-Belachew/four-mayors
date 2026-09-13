@@ -203,7 +203,7 @@ export class Cinema {
   async loadChar(url) {
     const { root, animations } = await this.ctx.loadModelFull(url);
     const obj = root.clone(true);
-    const s = 0.28 / Math.max(new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y, 0.01);
+    const s = 0.42 / Math.max(new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y, 0.01);
     obj.scale.setScalar(s);
     const mixer = new THREE.AnimationMixer(obj);
     const clip = name => animations.find(a => a.name === name) || animations[0];
@@ -257,8 +257,8 @@ export class Cinema {
   // ---- stages ----
   async stage_revolt(recap, ep, L, d) {
     const hall = this.focusLot("hall"); const { N } = this.ctx;
-    this.flyTo(new THREE.Vector3(hall.x + 3.2, 1.6, hall.z + 3.6), new THREE.Vector3(hall.x, 0.6, hall.z), 2.4);
-    this.spotlight(hall.x, hall.z, 0xff6b6b);
+    this.flyTo(new THREE.Vector3(hall.x + 0.6, 1.9, hall.z + 4.4), new THREE.Vector3(hall.x, 0.9, hall.z), 2.4);
+    this.spotlight(hall.x, hall.z + 1.2, 0xff6b6b);
     await this.say(L, recap.lines[0]);
     // crowd walks in from the houses
     const houses = [...this.ctx.lotMeta.values()].filter(l => ["house", "shack", "shuttered", "tower"].includes(l.kind)).slice(0, 18);
@@ -266,7 +266,7 @@ export class Cinema {
     for (let i = 0; i < n; i++) {
       const h = houses[i]; const c = await this.loadChar(CHARS[i % CHARS.length]);
       c.position.set(h.x, 0, h.z);
-      const to = new THREE.Vector3(hall.x + (Math.cos(i / n * Math.PI * 2) * (0.9 + (i % 3) * 0.25)), 0, hall.z + Math.sin(i / n * Math.PI * 2) * (0.9 + (i % 3) * 0.25) + 0.6);
+      const to = new THREE.Vector3(hall.x - 1.3 + (i % 6) * 0.52 + ((i * 7) % 3) * 0.08, 0, hall.z + 1.0 + Math.floor(i / 6) * 0.45);
       c.lookAt(to.x, 0, to.z); c.userData.play("walk");
       c.userData.path = { from: c.position.clone(), to, t: 0, dur: 2.4 + (i % 5) * 0.3 };
       c.userData.onArrive = a => { a.lookAt(hall.x, 0, hall.z); a.userData.play("emote-no"); };
