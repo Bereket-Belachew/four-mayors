@@ -36,7 +36,7 @@
     .ex-body h2 { font-size:20px; margin:0 0 4px; letter-spacing:-.01em; } .ex-body .lead { color:var(--ink-2); margin:0 0 16px; font-size:14px; }
     .ex-body h3 { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:22px 0 8px; font-weight:500; }
     /* agent */
-    .radial { position:relative; width:100%; max-width:560px; aspect-ratio:1; margin:6px auto; }
+    .radial { position:relative; width:calc(100% - 110px); max-width:480px; aspect-ratio:1; margin:14px auto 44px; }
     .radial .center { position:absolute; left:50%; top:50%; width:150px; height:150px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(#fff, var(--surface-2)); box-shadow:var(--shadow); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
     .radial .center img { width:88px; height:88px; object-fit:contain; } .radial .center b { font-size:13px; } .radial .center small { color:var(--muted); font-size:11px; }
     .act { position:absolute; width:104px; transform:translate(-50%,-50%); text-align:center; font-size:11.5px; color:var(--ink-2); }
@@ -46,11 +46,12 @@
     .act.never { opacity:.38; } .act.never .ic { background:var(--surface-2); box-shadow:none; }
     .act.never .why { display:block; color:var(--bad); font-size:10.5px; margin-top:2px; }
     .act.unused .ic { box-shadow:none; background:var(--surface-2); }
-    .legend { display:flex; gap:14px; color:var(--muted); font-size:12px; margin:8px 0 0; flex-wrap:wrap; }
+    .legend { display:flex; gap:14px; color:var(--muted); font-size:12px; margin:8px 0 0; flex-wrap:wrap; clear:both; }
     .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
     /* loop */
-    .loopwrap { display:grid; grid-template-columns: 1fr 260px; gap:18px; align-items:start; }
-    svg.loop { width:100%; height:auto; }
+    .loopwrap { display:grid; grid-template-columns: minmax(0,1fr); gap:18px; align-items:start; }
+    @media (min-width: 1400px) { .loopwrap { grid-template-columns: minmax(0,1fr) 250px; } }
+    svg.loop { width:100%; max-width:620px; height:auto; display:block; margin:0 auto; }
     svg.loop text { font-family:var(--font); }
     .stack { display:flex; flex-direction:column; gap:6px; }
     .stack div { background:#fff; border:1px solid var(--hair); border-radius:10px; padding:8px 10px; font-size:12px; color:var(--ink-2); }
@@ -183,19 +184,20 @@
     const lev = world.levers.map(l => `<div class="card ${pick === l.k ? "on" : ""}" data-k="${l.k}"><b>${l.label}</b><span class="m">${l.cost} · lands ${l.lands}</span></div>`).join("");
     const info = world.info_actions.map(l => `<div class="card ${pick === l.k ? "on" : ""}" data-k="${l.k}"><b>${l.label}</b><span class="m">fee ${l.fee}</span></div>`).join("");
     const sel = [...world.numbers, ...world.levers, ...world.info_actions].find(x => x.k === pick);
-    const law = sel ? `<b>${sel.label}.</b> ${sel.moves || sel.law}` : "Pick a number or a lever to read its law. Every number lives in one file, <code>sim/params.py</code>, and every rule is written in plain words in <code>docs/WORLD-RULES.md</code>.";
+    const lawFor = group => { const hit = group.find(x => x.k === pick); return hit ? `<div class="law"><b>${hit.label}.</b> ${hit.moves || hit.law}</div>` : ""; };
+    const law = sel ? "" : "Pick a number or a lever to read its law. Every number lives in one file, <code>sim/params.py</code>, and every rule is written in plain words in <code>docs/WORLD-RULES.md</code>.";
     const spark = (ex, key, color) => { const s = ex.series[key]; const min = Math.min(...s), max = Math.max(...s), rng = max - min || 1; const pts = s.map((v, i) => `${(i / (s.length - 1)) * 100},${64 - ((v - min) / rng) * 56 - 4}`).join(" "); return `<svg viewBox="0 0 100 64" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; };
     const ex = world.examples;
     const sparks = ["nothing", "spam", "best"].map(k => `<div><b>${ex[k].label}</b>${spark(ex[k], "population", "#1c1c1e")}<span class="sc">population · ended ${ex[k].ended} after ${ex[k].years} years · score ${ex[k].score} of 60</span>${spark(ex[k], "treasury", "#0a5cff")}<span class="sc">treasury</span></div>`).join("");
     body.innerHTML = `<h2>The world is a machine</h2><p class="lead">Seven numbers, eight levers, four information actions, and one step function. Same seed and same actions give the same city, byte for byte, on any machine. Nothing in it is a model: the consultants' forecasts are computed by simulating a quiet year, then biased on purpose.</p>
-      <h3>The seven numbers</h3><div class="cards">${num}</div>
-      <h3>The eight levers · same for every mayor</h3><div class="cards">${lev}</div>
-      <h3>Information actions · the toolset differs per mayor</h3><div class="cards">${info}</div>
-      <div class="law">${law}</div>
+      ${law ? `<div class="law">${law}</div>` : ""}
+      <h3>The seven numbers</h3><div class="cards">${num}</div>${lawFor(world.numbers)}
+      <h3>The eight levers · same for every mayor</h3><div class="cards">${lev}</div>${lawFor(world.levers)}
+      <h3>Information actions · the toolset differs per mayor</h3><div class="cards">${info}</div>${lawFor(world.info_actions)}
       <h3>Evidence the laws bite</h3><div class="spark">${sparks}</div>
       <p class="lead" style="font-size:13px;margin-top:10px"><span class="pill ok">✓ same seed twice → identical hash ${ex.same_seed_twice.hash}</span><span class="pill">a term ends: ${world.ends.join(" · ")}</span></p>
       <h3>Consequences land late</h3><p class="lead" style="font-size:13px">Housing and parks take a year, factories and transit two. Every change to a number is an event that remembers the decision and the year that caused it. That log is what the Reformer reads at the end of a term, and what the chronicler narrates.</p>`;
-    body.querySelectorAll(".card").forEach(c => c.onclick = () => { pick = c.dataset.k; renderWorld(e); });
+    body.querySelectorAll(".card").forEach(c => c.onclick = () => { const top = body.scrollTop; pick = c.dataset.k; renderWorld(e).then(() => { body.scrollTop = top; }); });
   }
 
   // ---------- JUDGES ----------
