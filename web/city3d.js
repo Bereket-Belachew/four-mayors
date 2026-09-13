@@ -133,7 +133,7 @@ scene.background = new THREE.Color(0x87b6d9);
 scene.fog = new THREE.Fog(0x87b6d9, 30, 90);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const orbit = new OrbitControls(camera, renderer.domElement);
-orbit.enableDamping = true; orbit.dampingFactor = 0.12; orbit.maxPolarAngle = Math.PI / 2 - 0.05; orbit.minDistance = 3; orbit.maxDistance = 60;
+orbit.enableDamping = true; orbit.dampingFactor = 0.1; orbit.zoomToCursor = true; orbit.zoomSpeed = 1.15; orbit.maxPolarAngle = Math.PI / 2 - 0.05; orbit.minDistance = 3; orbit.maxDistance = 60;
 const CENTER = new THREE.Vector3(N / 2 - 0.5, 0, N / 2 - 0.5);
 camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x556677, 0.9); scene.add(hemi);
@@ -181,7 +181,7 @@ async function distress(s, sb, kinds) {
   if (moneyBad) {
     const sev = Math.min(1, (Math.max(0, -s.treasury) + Math.max(0, s.debt - 3000)) / 6000);
     for (const [r, c] of pickN(roads, Math.round(3 + sev * 9), 21)) jobs.push(place(hash(r * N + c, 2) % 2 ? MODELS.barrier : MODELS.cone, c + 0.25, r + 0.15, { fit: 0.35 }).then(o => distressGroup.add(o)));
-    jobs.push(place(MODELS.billboard, N + 0.6, N / 2, { fit: 1.6, rotY: -Math.PI / 2 }).then(o => { distressGroup.add(o); const t = textSprite(`DEBT ${Math.round(s.debt).toLocaleString()}`); t.position.set(N + 0.6, 1.9, N / 2); distressGroup.add(t); }));
+    jobs.push(place(MODELS.billboard, N + 0.6, N / 2, { fit: 1.6, rotY: -Math.PI / 2 }).then(o => { distressGroup.add(o); const t = textSprite(`DEBT ${Math.round(s.debt).toLocaleString()}`); t.scale.set(1.5, 0.38, 1); t.position.set(N + 0.6, 2.05, N / 2); distressGroup.add(t); }));
   }
   // services low -> dumpsters on lot corners
   if (s.services < 30) for (const [r, c] of pickN(lots, Math.round(4 + (30 - s.services) / 4), 22)) jobs.push(place(MODELS.dumpster, c + 0.42, r + 0.42, { fit: 0.22 }).then(o => distressGroup.add(o)));
@@ -285,7 +285,9 @@ addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
 let dragging = false, lastX = 0, lastY = 0;
 renderer.domElement.addEventListener("pointerdown", e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
 addEventListener("pointerup", () => dragging = false);
-renderer.domElement.addEventListener("pointermove", e => { if (mode === "street" && dragging) { yaw -= (e.clientX - lastX) * 0.004; pitch = Math.max(-1.2, Math.min(0.6, pitch - (e.clientY - lastY) * 0.004)); } lastX = e.clientX; lastY = e.clientY; hoverAt(e); });
+let lastHover = 0, zoomingUntil = 0;
+renderer.domElement.addEventListener("wheel", () => { zoomingUntil = performance.now() + 250; $("talk").style.display = "none"; }, { passive: true });
+renderer.domElement.addEventListener("pointermove", e => { if (mode === "street" && dragging) { yaw -= (e.clientX - lastX) * 0.004; pitch = Math.max(-1.2, Math.min(0.6, pitch - (e.clientY - lastY) * 0.004)); } lastX = e.clientX; lastY = e.clientY; const now = performance.now(); if (now > zoomingUntil && now - lastHover > 60 && !dragging) { lastHover = now; hoverAt(e); } });
 function setMode(m) {
   mode = m; $("camOrbit").classList.toggle("sel", m === "orbit"); $("camStreet").classList.toggle("sel", m === "street");
   orbit.enabled = m === "orbit";
@@ -298,8 +300,10 @@ sndBtn.onclick = () => { setAudio(!audioEnabled()); sndBtn.textContent = audioEn
 const coBtn = document.createElement("button"); coBtn.id = "coBtn"; coBtn.textContent = "🗨 callouts"; coBtn.className = "sel"; coBtn.title = "small windows with a line to the spot, for the smaller moments"; sndBtn.after(coBtn);
 window.calloutsOn = true; coBtn.onclick = () => { window.calloutsOn = !window.calloutsOn; coBtn.classList.toggle("sel", window.calloutsOn); };
 $("togChamber").onclick = () => { document.body.classList.toggle("no-chamber"); setTimeout(resize, 50); };
+$("chMin").onclick = () => { document.body.classList.toggle("no-chamber"); setTimeout(resize, 50); };
+document.body.classList.add("no-chamber"); // quiet by default; open it when you want the mayor's thinking
 $("togPanel").onclick = () => { document.body.classList.toggle("no-panel"); setTimeout(resize, 50); };
-if (innerWidth < 1100) document.body.classList.add("no-chamber");
+
 
 // ---------- hover -> talk button ----------
 const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2(); let hovered = null;

@@ -37,9 +37,13 @@
   .bubble .did { color:var(--warn); margin:4px 0 2px; font-weight:500; }
   .bubble .why { color:var(--ink); }
   .bubble .memo { color:#93c5fd; margin-top:4px; font-size:11px; }
-  body.no-chamber { grid-template-columns:1fr 340px; } body.no-chamber #chamber { display:none; }
+  body.no-chamber { grid-template-columns:44px 1fr 340px; }
+  body.no-chamber #chamber .portrait > div, body.no-chamber #chamber .feed, body.no-chamber #chamber #mayorImg { display:none; }
+  body.no-chamber #chamber .portrait { padding:10px 6px; justify-content:center; }
+  body.no-chamber #chMin::before { content:"🗣"; } body.no-chamber #chMin { font-size:16px; }
+  #chMin { margin-left:auto; align-self:flex-start; background:var(--panel); color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 8px; cursor:pointer; }
   body.no-panel { grid-template-columns:300px 1fr; } body.no-panel aside { display:none; }
-  body.no-chamber.no-panel { grid-template-columns:1fr; }
+  body.no-chamber.no-panel { grid-template-columns:44px 1fr; }
   @media (max-width: 1300px) { body { grid-template-columns:260px 1fr 300px; } }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
   aside h2 { margin:0; font-size:13px; display:flex; justify-content:space-between; align-items:baseline; color:#9aa0aa; }
@@ -80,13 +84,13 @@
   <a href="index.html" style="color:var(--muted);font-size:12px">four-up</a>
 </header>
 <section id="chamber">
-  <div class="portrait"><img id="mayorImg" alt="" /><div><div id="chName" class="n">—</div><div id="chPersona" class="p"></div></div></div>
+  <div class="portrait"><img id="mayorImg" alt="" /><div><div id="chName" class="n">—</div><div id="chPersona" class="p"></div></div><button id="chMin" title="hide the council chamber">–</button></div>
   <div class="feed" id="feed"></div>
 </section>
 <div id="game">
   <div id="loading">loading the city…</div>
   <div id="talk">💬 talk<small id="talkLabel"></small></div>
-  <div id="fps" style="position:absolute;right:12px;top:10px;color:var(--muted);font-size:11px;background:rgba(15,17,21,.6);padding:2px 6px;border-radius:5px;pointer-events:none">– fps</div>
+  <div id="fps" style="position:absolute;right:12px;bottom:10px;color:var(--muted);font-size:11px;background:rgba(15,17,21,.6);padding:2px 6px;border-radius:5px;pointer-events:none">– fps</div>
   <div id="hint">drag to orbit · wheel to zoom · hover a building to talk · street view: WASD to walk, drag to look</div>
 </div>
 <aside>
