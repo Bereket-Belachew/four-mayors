@@ -18,7 +18,7 @@ import weave
 class LLMConfig:
     provider: str = os.getenv("MAYOR_PROVIDER", "mock")
     model: str = os.getenv("MAYOR_MODEL", "gpt-5.6-luna")
-    max_tokens: int = 1200
+    max_tokens: int = 4000   # 1200 -> 4000 (2026-09-13): Luna's reasoning counts against the completion budget; a long post-mortem hit the ceiling and killed a run
     temperature: float = 0.2
 
 
@@ -56,13 +56,24 @@ class LLM:
         if self.cfg.provider == "mock":
             return _mock_policy(user)
         if self.cfg.provider == "openai":
-            resp = self._client.chat.completions.create(
-                model=self.cfg.model,
-                messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-                response_format={"type": "json_object"},
-                max_completion_tokens=self.cfg.max_tokens,
-            )
-            return _extract_json(resp.choices[0].message.content or "{}")
+            budget = self.cfg.max_tokens
+            for attempt in range(3):
+                try:
+                    resp = self._client.chat.completions.create(
+                        model=self.cfg.model,
+                        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                        response_format={"type": "json_object"},
+                        max_completion_tokens=budget,
+                    )
+                    return _extract_json(resp.choices[0].message.content or "{}")
+                except Exception as e:  # a hit output ceiling is retried with more room; anything else after 3 tries is "no answer", never a dead run
+                    msg = str(e)
+                    if "max_tokens" in msg or "output limit" in msg:
+                        budget *= 2
+                        continue
+                    if attempt == 2:
+                        return {}
+            return {}
         # anthropic
         resp = self._client.messages.create(
             model=self.cfg.model,
