@@ -123,7 +123,8 @@ def test_loop_actions_are_deterministic_and_do_not_change_the_city():
 
 
 def test_land_is_finite_and_refuses_when_full():
-    w = new_world(2)
+    from sim.params import DEFAULT
+    w = new_world(2, params=DEFAULT.with_(start_treasury=50_000.0))  # rich enough to hit the land limit before the money runs out
     p = w.params
     assert p.land_enabled
     free0 = w.state.lots_free(p)
@@ -158,3 +159,52 @@ def test_citizens_live_the_debt():
     assert austerity, "no austerity event"
     mean = lambda w: sum(y["state"]["happiness"] for y in w.history) / len(w.history)
     assert mean(with_rules) < mean(without) - 3, (mean(with_rules), mean(without))
+
+
+# ---- rules grounded in the literature (2026-09-13, docs/research/world-models.md) ----
+
+
+def test_jobs_need_workers():
+    """A vacancy pays no tax, and jobs no one can fill shrink away (Beveridge curve)."""
+    from sim.params import DEFAULT
+    p = DEFAULT
+    rich = new_world(0, params=p.with_(start_jobs=2000.0))          # 2000 jobs for 600 workers
+    par = new_world(0, params=p.with_(start_jobs=600.0))            # exactly the workforce
+    r1 = step(rich, [])
+    r2 = step(par, [])
+    rev = lambda rec: next(e["delta"] for e in rec["events"] if e["variable"] == "treasury" and e["note"] == "tax revenue")
+    assert abs(rev(r1) - rev(r2)) < 1e-6, "phantom jobs paid tax"
+    assert rich.state.jobs < 2000.0, "unfilled jobs never shrank"
+    assert any("no staff" in e["note"] for e in r1["events"] if e["variable"] == "jobs")
+
+
+def test_recession_lands_once_per_term_and_is_seeded():
+    a = run_script(3, [])
+    b = run_script(3, [])
+    shocks = [e for y in a.history for e in y["events"] if e["cause_action"] == "recession"]
+    assert len(shocks) == 1 and 5 <= shocks[0]["year"] <= 15
+    assert a.shock_year == b.shock_year
+    assert new_world(3).shock_year != new_world(4).shock_year or new_world(3).shock_year != new_world(5).shock_year
+
+
+def test_tax_is_a_slope_not_a_cliff():
+    """Bartik: business drifts with the rate. 25% tax already loses jobs; 5% gains them; 15% is par."""
+    from sim.params import DEFAULT
+    p = DEFAULT.with_(shock_enabled=False, start_jobs=600.0)
+    def jobs_after(rate):
+        w = new_world(0, params=p)
+        step(w, [Action("set_tax", {"rate": rate})])
+        return w.state.jobs
+    assert jobs_after(0.25) < jobs_after(0.15) < jobs_after(0.05)
+    w = new_world(0, params=p); step(w, [])
+    assert abs(w.state.jobs - 600.0) < 1e-6, "at the reference rate jobs should hold"
+
+
+def test_do_nothing_decays_but_an_active_mayor_beats_it():
+    """The starting city is not a free lunch and not a death trap."""
+    from judge.scoreboard import score_trajectory
+    nothing = run_script(0, [])
+    assert nothing.ended == "horizon"
+    active = run_script(0, [[Action("subsidize_business", {"amount": 2})]]
+                        + [[Action("fund_services", {"level": 1})] if i % 3 == 0 else [] for i in range(19)])
+    assert score_trajectory(active.history, active.ended)["total"] > score_trajectory(nothing.history, nothing.ended)["total"] + 5

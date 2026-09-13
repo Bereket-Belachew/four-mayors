@@ -20,7 +20,7 @@ class Params:
     # ---- starting city (the "default" scenario) -----------------------------
     start_population: float = 1000.0
     start_housing: float = 1100.0
-    start_jobs: float = 900.0
+    start_jobs: float = 540.0        # 900 -> 540 on 2026-09-13: 10% unemployment at the start (the Cities: Skylines player's target); 900 jobs for 600 workers was a labour shortage no model lets persist
     start_treasury: float = 500.0
     start_pollution: float = 20.0
     start_happiness: float = 60.0
@@ -32,10 +32,18 @@ class Params:
     start_debt: float = 0.0
 
     # ---- people -----------------------------------------------------------------
-    workforce_share: float = 0.60      # share of population that can work
+    workforce_share: float = 0.60      # share of population that can work (US labour-force participation is 62%)
+    # ---- jobs need workers (2026-09-13, docs/research/world-models.md: Beveridge curve, SimCity/Skylines demand rule)
+    tax_filled_jobs_only: bool = True  # tax is paid by people who work, never by a vacancy
+    labour_ceiling: float = 1.10       # jobs above this multiple of the workforce cannot find staff...
+    unfilled_shrink_rate: float = 0.10 # ...and shrink by this share of the excess each year ("no staff, business leaves")
+    # ---- a recession once a term (Martin & Sunley: resilience needs a shock to recover from)
+    shock_enabled: bool = True
+    shock_year_range: tuple[int, int] = (5, 15)   # drawn from the seed, so the Reformer can learn it but not know it
+    shock_jobs_drop: float = 0.10      # a mild Okun recession: 10% of jobs vanish that year
 
     # ---- money ------------------------------------------------------------------
-    wage: float = 3.5                  # taxable money per job per year; revenue = tax * jobs * wage (3.0 -> 3.5 on 2026-09-12 ~15:50: at 3.0 the starting city had zero fiscal slack, so ANY spending was a deficit)
+    wage: float = 5.5                  # taxable money per FILLED job per year; revenue = tax * min(jobs, workforce) * wage. 3.0 -> 3.5 (2026-09-12) -> 5.5 (2026-09-13): once only filled jobs pay tax, full employment (600 workers at 15%) must cover the ~410 upkeep AND leave ~85/yr for one service level every three years; the 10%-unemployed start has ~35/yr of slack, so a mayor who never fixes unemployment can fund almost nothing
     upkeep_per_head: float = 0.25
     transit_upkeep: float = 40.0       # per level per year
     factory_upkeep: float = 20.0       # per factory per year
@@ -45,6 +53,7 @@ class Params:
 
     # ---- levers: cost, delay, arg range ---------------------------------------
     housing_cost: float = 1.5          # per unit
+    housing_depreciation: float = 0.01 # share of homes falling out of use each year (Glaeser & Gyourko: housing is durable, decline is slow)
     housing_delay: int = 1
     housing_range: tuple[float, float] = (10, 400)
     factory_cost: float = 300.0
@@ -88,6 +97,7 @@ class Params:
     park_cleans: float = 1.5           # per park per year (fixed mode)
     transit_cleans: float = 1.0        # per level per year
     pollution_noise: float = 1.0
+    pollution_baseline: float = 20.0   # people leave over pollution ABOVE this, not over the level (Chen, Oliva & Zhang 2017 measure changes)
     park_mode: str = "absorb"          # "fixed" (subtract park_cleans each) | "absorb" (share of ambient, diminishing)
     park_absorb_first: float = 0.12    # absorb mode: share of ambient pollution the first park removes per year
     park_absorb_decay: float = 0.80    # each additional park absorbs this fraction of the previous one's share
@@ -117,8 +127,13 @@ class Params:
     services_decay: float = 4.0
 
     # ---- jobs leaving --------------------------------------------------------
-    tax_flight_threshold: float = 0.30
-    tax_flight_rate: float = 0.02
+    tax_flight_mode: str = "slope"     # "slope" (Bartik 1992: a gentle curve from zero) | "cliff" (old: nothing below the threshold, 2%/yr above)
+    tax_reference: float = 0.15        # the rate at which business is at par
+    tax_elasticity: float = 0.30       # business settles at jobs × (reference/rate)^elasticity: 30% tax -> 19% below par, 40% -> 26%
+    tax_drift: float = 0.10            # share of the gap closed each year
+    tax_pull_cap: float = 1.30         # a tax cut can attract at most 30% more business
+    tax_flight_threshold: float = 0.30 # cliff mode only
+    tax_flight_rate: float = 0.02      # cliff mode only
     services_flight_threshold: float = 20.0
     services_flight_rate: float = 0.01
 
@@ -129,6 +144,7 @@ class Params:
     housing_ratio_clamp: tuple[float, float] = (0.8, 1.2)
     happiness_pollution: float = 0.35
     tax_unhappiness: float = 60.0
+    tax_unhappiness_services_scaled: bool = True  # Oishi, Schimmack & Diener 2012: the rate itself is not what hurts, it is what it fails to buy; penalty × (1 − services/100)
     happiness_services: float = 0.25
     happiness_inertia: float = 0.5
     happiness_noise: float = 2.0
@@ -165,7 +181,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         "start_jobs": 420.0, "start_happiness": 48.0, "start_treasury": 400.0,
     },
     "smog": {  # a factory town choking
-        "start_pollution": 70.0, "start_factories": 6, "start_parks": 0, "start_jobs": 1300.0,
+        "start_pollution": 70.0, "start_factories": 6, "start_parks": 0, "start_jobs": 660.0,  # 1300 -> 660 (2026-09-13): full employment plus a little excess, not 2 jobs per worker
         "start_happiness": 45.0,
     },
     "debt": {  # the last mayor borrowed

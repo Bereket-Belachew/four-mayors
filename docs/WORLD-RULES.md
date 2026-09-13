@@ -108,8 +108,10 @@ on purpose, so the industrialist's advice is tempting. The price is permanent sm
 These run every year whether or not the mayor did anything. Each is one sentence of intent, then
 the current formula.
 
-**Money in.** Each job pays tax. Revenue = tax rate × jobs × 3 [wage]. So at 15% and 900 jobs,
-the city takes in 405 a year. Assumption: a job is worth 3 money a year in taxable wages.
+**Money in.** Each *filled* job pays tax; a vacancy pays nothing [tax_filled_jobs_only]. Revenue = tax rate × min(jobs, workforce) × 5.5 [wage].
+The workforce is 60% of the people [workforce_share], which is real (the US rate is 62%). The starting city has 540 jobs for 600 workers,
+so 10% are idle and revenue is 446 a year against about 410 of upkeep: a little slack, not a fortune. Fill the jobs and it is 495.
+(Changed 2026-09-13: the old world taxed all 900 jobs on 600 workers, so half the revenue was phantom and one mayor banked 78,000.)
 
 **Money out.** Running a city costs 0.25 per resident [upkeep_per_head], 40 per transit level,
 20 per factory, and 60 × services/50 for services [services_upkeep]. At the start that is about
@@ -126,8 +128,13 @@ so enough parks reach zero.
 **Services decay.** Minus 4 points a year, always [services_decay]. Schools and clinics need
 funding to stay good. Unfunded, the starting 50 hits zero in 12 years.
 
-**Jobs leave.** If tax is above 30%, 2% of jobs close each year. If services are below 20,
-1% close each year [services_flight_rate]. Otherwise jobs only change through levers.
+**Jobs leave, and arrive, with the tax rate.** Business drifts 10% of the way each year toward jobs × (15% ÷ rate)^0.3 [tax_flight_mode = slope,
+tax_reference, tax_elasticity, tax_drift]. At 30% tax jobs settle 19% below par; at 40%, 26%; at 5% they grow, but at most 30% above par [tax_pull_cap].
+This is Bartik's finding (1992): tax competition is a gentle slope, not a cliff. If services are below 20, 1% of jobs close a year [services_flight_rate].
+**Jobs no one can fill do not last:** jobs above 1.1 × the workforce shrink by 10% of the excess each year [labour_ceiling, unfilled_shrink_rate].
+**Once a term there is a recession:** in a year drawn from the seed between 5 and 15, 10% of jobs vanish [shock_enabled, shock_year_range, shock_jobs_drop].
+Every mayor gets exactly one; the Reformer can learn that it comes but not when.
+**Homes wear out:** 1% of housing falls out of use each year [housing_depreciation], so a stagnant city slowly loses homes (Glaeser & Gyourko 2005).
 
 **Happiness.** People have a target level of contentment given their situation, and each year
 happiness moves halfway toward it [happiness_inertia = 0.5], with ±2 noise. The target is:
@@ -136,7 +143,7 @@ happiness moves halfway toward it [happiness_inertia = 0.5], with ±2 noise. The
     + 30 × employment rate            (having work matters most)
     + 15 × housing ratio, clamped 0.8..1.2, minus 15   (enough homes, not too crowded)
     − 0.35 × pollution                (dirty air hurts)
-    − 60 × tax rate                   (taxes hurt: 15% costs 9 points)
+    − 60 × tax rate × (1 − services/100)   (taxes hurt only as far as they fail to buy services: 15% with services at 50 costs 4.5 points; Oishi et al. 2012)
     + 0.25 × services                 (good services help: 50 points gives 12.5)
 
 So a fully employed, well-housed, clean, low-tax, well-served city tops out near 100.
@@ -145,7 +152,8 @@ So a fully employed, well-housed, clean, low-tax, well-served city tops out near
 - Arrivals: half of the empty homes fill each year [move_in_rate], scaled by how happy the
   city is (from 0.5× at zero happiness to 1× at 100).
 - Departures: each year the city loses 8% × the unemployed share of people [unemployment_exodus],
-  plus 0.2% × pollution [pollution_exodus], plus 3% if happiness is below 35 [misery_exodus].
+  plus 0.2% × (pollution above the starting 20) [pollution_exodus, pollution_baseline] (people leave over air getting worse, not over air as it is: Chen, Oliva & Zhang 2017),
+  plus 3% if happiness is below 35 [misery_exodus].
 - If there are more people than homes, half the excess leaves [overcrowding_exodus].
 
 **This is where the housing trap lives.** Build 400 units a year and people pour in, jobs do not
@@ -207,11 +215,11 @@ Six criteria, each 0 to 10, total 60. Written as formulas so the same term alway
 | Criterion | Intent | Current formula, roughly |
 |---|---|---|
 | prosperity | most working-age people have work, and jobs did not collapse | employment rate × 8, plus up to ±2 for the jobs trend |
-| housing | homes stayed near "just enough" | 10 × share of years with ratio 1.0–1.2, minus 5 × share of years below 0.9 or above 1.5, plus 2 |
+| housing | homes stayed near "just enough" | 10 × average credit, where a year earns full credit at 1.03–1.10 homes per person (the natural vacancy rate, 3–10% empty) and credit falls straight to zero at 0.9 and 1.5; minus 5 × share of years outside 0.9–1.5. No free points. |
 | fiscal | money got better, debt was useful, no hoarding | 5 + treasury change in thousands (capped ±4); −3 if ending below −1000; −2 if borrowed and nothing grew; −2 if sitting on 3000+ while services under 20 |
 | environment | air got cleaner | 6 − (pollution change)/6 |
 | wellbeing | people were content, no deep misery | 0.7 × average happiness/10 + 0.3 × lowest happiness/10 |
-| resilience | recovered from dips; no early exit | early exit: at most 2. Otherwise 7 + 1.5 per recovery − 1.5 per unrecovered dip (dip = 15% below the running peak in jobs, treasury, or happiness) |
+| resilience | climbed back fast from the recession and other dips; no early exit | early exit: at most 2. Otherwise 7 − 0.5 per year spent in a dip + 1.5 per recovery (dip = 15% below the running peak in jobs or happiness; recovery = back to 95%). Treasury is not counted: spending it is a choice, not a shock. |
 
 Every weight here is my judgement of what a good mayor is. Change any of them.
 
@@ -362,3 +370,31 @@ austerity events appear, and mean happiness over the term is at least 3 points l
 How often a real model's lessons are testable. Whether any lesson ever fails. Whether the
 Populist's approval blend produces different behavior or just different confidence numbers.
 Whether the housing trap ever tempts a model. All of this is unknown until the first real run.
+
+
+## 10. Grounded in the literature [2026-09-13 morning, his go after the research]
+
+`docs/research/world-models.md` compares every rule above with 55 years of city models and the wellbeing research,
+in plain words with sources. These are the changes it produced. Each is one rule, applied to all four mayors alike.
+
+| What changed | Old | New | Copied from |
+|---|---|---|---|
+| Who pays tax | every job, filled or not | only jobs someone holds | how towns actually tax (income and property, never vacancies) |
+| Starting jobs | 900 for 600 workers | 540 for 600 workers (10% idle) | SimCity manual, Cities: Skylines demand rule; the Beveridge curve |
+| Jobs no one can fill | stayed forever | shrink 10% of the excess a year above 1.1 × workforce | tight labour markets |
+| Tax flight | nothing below 30%, 2%/yr cliff above | a slope: jobs settle at (15%/rate)^0.3 of par | Bartik 1992 (elasticity −0.1 to −0.5) |
+| Tax and mood | 60 × rate, always | 60 × rate × (1 − services/100) | Oishi, Schimmack & Diener 2012 |
+| People leaving over smog | 0.2% × pollution level | 0.2% × pollution above 20 | Chen, Oliva & Zhang 2017 (they measure changes) |
+| Homes | never decay | wear out 1% a year | Glaeser & Gyourko 2005 |
+| Housing score | band 1.0–1.2 plus a free 2 | band 1.03–1.10, credit tapering to the bad edges, no free points | Rosen & Smith 1983 natural vacancy |
+| Resilience | 7 ± 1.5 per dip/recovery, nothing to recover from | one seeded recession a term (−10% jobs, year 5–15); 7 − 0.5 per year in a dip + 1.5 per recovery | Martin & Sunley 2015 |
+| Wage constant | 3.5 | 5.5 | balance: full employment at 15% must cover upkeep and one service level every three years |
+
+**Kept on purpose, and labelled:** parks still absorb 12% of ambient pollution (real trees: under 1%, Nowak 2014). A park that does
+nothing measurable is not a lever a 20-year game can use. **Not changed, on the evidence:** the debt penalty on mood stays small;
+the research does not support a large direct effect of public debt on wellbeing. Debt hurts through austerity, which is Detroit's story
+and already in the rules.
+
+Baselines under the new rules (seed 0, default city, formula score of 60): do nothing 32.5 · a modest active mayor (subsidies, services) 41.5 ·
+the housing trap 18.4 (bankrupt year 7) · a borrowed factory town 23.2 · 40% tax 30.3 · 5% tax bankrupt in year 18 ·
+the best of 400 random scripts 43.2. Doing nothing is no longer a good mayor.

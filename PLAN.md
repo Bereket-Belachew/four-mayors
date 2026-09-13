@@ -24,6 +24,9 @@ Everything below exists to make this line true. -->
 - [x] Claude judge bug: Sonnet 5 spends the budget thinking, JSON was truncated → zeros. max_tokens 3000 + salvage parser.
 - [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
+## Later: the science article
+- Later, when the world is a good scientific representation: a professional 'The science behind our world' article, written like an Aeon essay (human, well-written, no jargon), with the research sources as an appendix. Draft material: docs/research/world-models.md. (his ask, Sun 2026-09-13 morning)
+
 ## Scoring holes found Sun 2026-09-13 morning — parked, not fixed (his call: research first)
 - Unemployment is 0.00 at the end of all 24 demo terms. Workforce = 60% of population; default city has 900 jobs for 600 workers; revenue taxes ALL jobs (phantom jobs pay). Employment pinned at 1 → prosperity 10, mood floor ~73, unbounded treasury (Bureaucrat 78k).
 - Housing: flat +2 and move-in self-corrects the ratio → doing nothing scores 10.

@@ -189,6 +189,7 @@ class World:
     history: list[dict[str, Any]] = field(default_factory=list)
     ended: str | None = None
     start_public: dict[str, Any] | None = None  # the city on day one of this term (carried or fresh)
+    shock_year: int = 0  # the year the recession lands this term (0 = none); drawn from the seed in new_world
 
     def _rng(self, year: int, salt: str = "") -> random.Random:
         h = hashlib.sha256(f"{self.seed}:{year}:{salt}".encode()).hexdigest()
@@ -214,7 +215,7 @@ def _naive_forecast(state: State, p: Params) -> dict[str, float]:
     return {
         "jobs_next_year": state.jobs * (1.0 + 0.02 * state.factories / 3),
         "pollution_next_year": state.pollution + p.factory_smoke * state.factories - p.park_cleans * state.parks,
-        "treasury_next_year": state.treasury + state.tax_rate * state.jobs * p.wage
+        "treasury_next_year": state.treasury + state.tax_rate * min(state.jobs, state.population * p.workforce_share) * p.wage
         - p.services_upkeep * state.services / p.services_upkeep_ref - state.debt * p.interest_rate,
         "happiness_next_year": state.happiness,
     }
@@ -447,7 +448,14 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
 
     # ---- 5. the economy turns -------------------------------------------------
     rng = world._rng(year, "economy")
-    revenue = s.tax_rate * s.jobs * p.wage
+    workforce = max(s.population * p.workforce_share, 1.0)
+    # a recession lands once a term: orders dry up, a tenth of the jobs go
+    if p.shock_enabled and year == world.shock_year and s.jobs > 0:
+        lost = s.jobs * p.shock_jobs_drop
+        s.jobs -= lost
+        emit("jobs", -lost, "recession", year, "recession: orders dry up, firms lay people off")
+    taxable = min(s.jobs, workforce) if p.tax_filled_jobs_only else s.jobs
+    revenue = s.tax_rate * taxable * p.wage
     upkeep = (p.upkeep_per_head * s.population + p.transit_upkeep * s.transit
               + p.factory_upkeep * s.factories + p.services_upkeep * s.services / p.services_upkeep_ref)
     interest = s.debt * p.interest_rate
@@ -473,6 +481,12 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
     emit("pollution", new_p - s.pollution, "economy", year, note)
     s.pollution = new_p
 
+    # homes wear out slowly: a stagnant city loses housing (Glaeser & Gyourko)
+    if p.housing_depreciation > 0 and s.housing > 0:
+        worn = s.housing * p.housing_depreciation
+        s.housing -= worn
+        emit("housing", -worn, "economy", year, "wear: old homes fall out of use")
+
     # services decay, plus austerity: a broke city cannot pay its teachers and nurses
     s.services = _clamp(s.services - p.services_decay, 0, 100)
     emit("services", -p.services_decay, "economy", year, "decay without funding")
@@ -485,9 +499,23 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
     # jobs churn
     churn = 0.0
     cause = "economy"
-    if s.tax_rate > p.tax_flight_threshold:
+    notes: list[str] = []
+    if p.tax_flight_mode == "slope":
+        # Bartik: business drifts toward a level set by the tax rate, a slope not a cliff
+        pull = min(p.tax_pull_cap, (p.tax_reference / max(s.tax_rate, 0.01)) ** p.tax_elasticity)
+        tax_churn = p.tax_drift * s.jobs * (pull - 1.0)
+        if abs(tax_churn) > 1e-9:
+            churn += tax_churn
+            cause = "set_tax"
+            notes.append("businesses leave over tax" if tax_churn < 0 else "low tax draws business")
+    elif s.tax_rate > p.tax_flight_threshold:
         churn -= p.tax_flight_rate * s.jobs
         cause = "set_tax"
+    # jobs no one can fill do not last
+    excess = s.jobs - p.labour_ceiling * workforce
+    if excess > 0:
+        churn -= p.unfilled_shrink_rate * excess
+        notes.append("no staff to hire: businesses leave")
     if s.services < p.services_flight_threshold:
         churn -= p.services_flight_rate * s.jobs
     if s.debt > max(p.credit_floor, p.credit_limit_years * revenue):
@@ -495,7 +523,7 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
         cause = "borrow"
     if churn:
         s.jobs = max(0.0, s.jobs + churn)
-        emit("jobs", churn, cause, year, "businesses close")
+        emit("jobs", churn, cause, year, "; ".join(notes) if notes else ("businesses close" if churn < 0 else "businesses open"))
 
     # happiness
     lo, hi = p.housing_ratio_clamp
@@ -503,7 +531,7 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
               + p.happiness_employment * s.employment_rate(p)
               + p.happiness_housing * _clamp(s.housing_ratio, lo, hi) - p.happiness_housing
               - p.happiness_pollution * s.pollution
-              - p.tax_unhappiness * s.tax_rate
+              - p.tax_unhappiness * s.tax_rate * ((1.0 - s.services / 100.0) if p.tax_unhappiness_services_scaled else 1.0)
               + p.happiness_services * s.services
               - p.debt_unhappiness_per_head * (interest / max(s.population, 1.0))
               - p.deficit_unhappiness_per_1000 * max(0.0, -s.treasury) / 1000)
@@ -516,7 +544,7 @@ def step(world: World, actions: list[Action]) -> dict[str, Any]:
     # population
     room = s.housing - s.population
     inflow = p.move_in_rate * max(room, 0) * (0.5 + s.happiness / 200)
-    outflow = s.population * (p.unemployment_exodus * s.unemployment(p) + p.pollution_exodus * s.pollution
+    outflow = s.population * (p.unemployment_exodus * s.unemployment(p) + p.pollution_exodus * max(0.0, s.pollution - p.pollution_baseline)
                               + (p.misery_exodus if s.happiness < p.misery_threshold else 0))
     if room < 0:
         outflow += -room * p.overcrowding_exodus
@@ -581,6 +609,9 @@ def new_world(seed: int, scenario: str | None = None, params: Params | None = No
         )
     w = World(seed=seed * 1000 + term, params=p, scenario=scenario or "default", state=st)
     w.start_public = st.public(p)
+    if p.shock_enabled:
+        lo, hi = p.shock_year_range
+        w.shock_year = w._rng(0, "shock").randint(lo, hi)
     return w
 
 

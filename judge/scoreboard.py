@@ -8,6 +8,8 @@ from __future__ import annotations
 from typing import Any
 
 CRITERIA = ["prosperity", "housing", "fiscal", "environment", "wellbeing", "resilience"]
+HOUSING_BAND = (1.03, 1.10)   # the natural vacancy rate, 3-10% empty (Rosen & Smith 1983); was 1.0-1.2 with a free +2
+HOUSING_BAD = (0.9, 1.5)
 
 
 def _clamp10(x: float) -> float:
@@ -29,10 +31,19 @@ def score_trajectory(history: list[dict[str, Any]], ended: str) -> dict[str, flo
     prosperity = _clamp10(emp * 8 + max(-2, min(2, jobs_trend * 4)))
 
     # 2 housing adequacy: share of years with ratio in [1.0, 1.2]
+    # full credit inside the natural-vacancy band, falling straight to zero at the bad edges
+    def _credit(r: float) -> float:
+        lo, hi = HOUSING_BAND
+        blo, bhi = HOUSING_BAD
+        if lo <= r <= hi:
+            return 1.0
+        if r < lo:
+            return max(0.0, (r - blo) / (lo - blo))
+        return max(0.0, (bhi - r) / (bhi - hi))
     ratios = [s["housing_ratio"] for s in states]
-    good = sum(1 for r in ratios if 1.0 <= r <= 1.2) / len(ratios)
-    bad = sum(1 for r in ratios if r < 0.9 or r > 1.5) / len(ratios)
-    housing = _clamp10(10 * good - 5 * bad + 2)
+    good = sum(_credit(r) for r in ratios) / len(ratios)
+    bad = sum(1 for r in ratios if r < HOUSING_BAD[0] or r > HOUSING_BAD[1]) / len(ratios)
+    housing = _clamp10(10 * good - 5 * bad)
 
     # 3 fiscal: NET WORTH (treasury minus debt) trend, ending position, hoarding while services decay
     nw_first = first["treasury"] - first.get("debt", 0)
@@ -58,25 +69,27 @@ def score_trajectory(history: list[dict[str, Any]], ended: str) -> dict[str, flo
     hs = [s["happiness"] for s in states]
     wellbeing = _clamp10((sum(hs) / len(hs)) / 10 * 0.7 + min(hs) / 10 * 0.3)
 
-    # 6 resilience: recovery from dips; early exit caps it
+    # 6 resilience: how fast the city climbs out of dips (Martin & Sunley: resistance + recovery);
+    # every term now carries one seeded recession, so there is always something to recover from.
     if ended != "horizon":
         resilience = _clamp10(min(2.0, len(history) / 10))
     else:
-        dips = 0
+        years_in_dip = 0
         recoveries = 0
-        for key in ("jobs", "treasury", "happiness"):
+        for key in ("jobs", "happiness"):  # treasury is a policy choice (investing dips it on purpose), not a shock
             seq = [s[key] for s in states]
             peak = seq[0]
             in_dip = False
             for v in seq:
                 if v < peak * 0.85 and not in_dip:
                     in_dip = True
-                    dips += 1
+                if in_dip:
+                    years_in_dip += 1
                 if in_dip and v >= peak * 0.95:
                     in_dip = False
                     recoveries += 1
                 peak = max(peak, v)
-        resilience = _clamp10(7 + (recoveries * 1.5) - (dips - recoveries) * 1.5)
+        resilience = _clamp10(7 - 0.5 * years_in_dip + 1.5 * recoveries)
 
     scores = {
         "prosperity": prosperity, "housing": housing, "fiscal": fiscal,
