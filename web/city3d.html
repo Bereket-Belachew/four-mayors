@@ -8,7 +8,7 @@
   :root { --bg:#0f1115; --panel:#171a21; --ink:#e8e8ea; --muted:#9aa0aa; --line:#2a2f3a; --good:#4ade80; --bad:#f87171; --warn:#fbbf24; }
   * { box-sizing:border-box; }
   html, body { height:100%; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; display:grid; grid-template-rows:auto 1fr; grid-template-columns:1fr 340px; height:100vh; overflow:hidden; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; display:grid; grid-template-rows:auto 1fr; grid-template-columns:300px 1fr 340px; height:100vh; overflow:hidden; }
   header { grid-column:1 / -1; display:flex; gap:12px; align-items:center; padding:8px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   header h1 { font-size:16px; margin:0 8px 0 0; font-weight:600; }
   select, button, input[type=range] { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
@@ -24,6 +24,19 @@
   #talk { position:absolute; display:none; transform:translate(-50%,-100%); background:#111318; border:1px solid #2563eb; color:var(--ink); border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; text-align:center; z-index:5; }
   #talk small { display:block; color:var(--muted); font-size:11px; }
   #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); background:rgba(11,13,18,.85); z-index:6; }
+  #chamber { border-right:1px solid var(--line); background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }
+  #chamber .portrait { display:flex; gap:10px; align-items:center; padding:12px 12px 8px; border-bottom:1px solid var(--line); }
+  #chamber .portrait img { width:56px; height:56px; object-fit:contain; background:#0b0d12; border-radius:10px; border:1px solid var(--line); }
+  #chamber .n { font-weight:600; font-size:15px; } #chamber .p { font-size:11px; color:var(--muted); line-height:1.35; }
+  #chamber .feed { overflow:auto; padding:10px 12px; display:flex; flex-direction:column; gap:10px; }
+  .bubble { background:#0f1115; border:1px solid var(--line); border-radius:12px; padding:8px 10px; font-size:12px; line-height:1.4; opacity:.55; }
+  .bubble.now { opacity:1; border-color:#2563eb; box-shadow:0 0 0 1px #2563eb inset; }
+  .bubble .y { color:var(--muted); font-size:11px; display:flex; justify-content:space-between; }
+  .bubble .saw { color:var(--muted); margin:4px 0 2px; } .bubble .saw b { color:var(--ink); font-weight:500; }
+  .bubble .heard { color:#c4b5fd; margin:2px 0; font-style:italic; }
+  .bubble .did { color:var(--warn); margin:4px 0 2px; font-weight:500; }
+  .bubble .why { color:var(--ink); }
+  .bubble .memo { color:#93c5fd; margin-top:4px; font-size:11px; }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
   aside h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
   aside h2 .score { color:var(--warn); font-variant-numeric:tabular-nums; }
@@ -60,6 +73,10 @@
   <a href="iso.html" style="color:var(--muted);font-size:12px">isometric</a>
   <a href="index.html" style="color:var(--muted);font-size:12px">four-up</a>
 </header>
+<section id="chamber">
+  <div class="portrait"><img id="mayorImg" alt="" /><div><div id="chName" class="n">—</div><div id="chPersona" class="p"></div></div></div>
+  <div class="feed" id="feed"></div>
+</section>
 <div id="game">
   <div id="loading">loading the city…</div>
   <div id="talk">💬 talk<small id="talkLabel"></small></div>

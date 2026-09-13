@@ -333,10 +333,47 @@ animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
 window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep;
 
+// ---------- council chamber (left): what the mayor saw, heard, decided, and why ----------
+const PORTRAIT = { caesar: "character-a", bureaucrat: "character-h", reformer: "character-e", populist: "character-m", reformer_shuffled: "character-e" };
+const PERSONA = { caesar: "Decides alone and fast. Consults no one. Carries nothing between terms.", bureaucrat: "Consults everyone, every year. Keeps every record. Checks none of them against outcomes.", reformer: "Writes falsifiable lessons from what actually happened. Reviews them next term. Drops the ones that fail.", populist: "The Reformer's method, but judged by applause: lessons live or die by citizen approval.", reformer_shuffled: "Control: the Reformer's memory with the rules shuffled." };
+let feedBuilt = null;
+function buildFeed() {
+  if (!ep) return;
+  $("mayorImg").src = `assets/kenney/kenney_blocky-characters/Previews/${PORTRAIT[ep.mayor] || "character-a"}.png`;
+  $("chName").textContent = NAMES[ep.mayor] || ep.mayor; $("chPersona").textContent = PERSONA[ep.mayor] || "";
+  const feed = $("feed"); feed.innerHTML = "";
+  const mem = ep.memory_before;
+  if (mem && mem.policy !== "none" && ep.term > 0) {
+    const b = document.createElement("div"); b.className = "bubble memo-bubble";
+    b.innerHTML = mem.policy === "opinion_log" ? `<div class="y"><span>carried in</span></div><div class="memo">${mem.opinion_log_entries} records from earlier terms, ${Math.round(mem.opinion_log_chars / 1000)}k characters of advice. None checked.</div>`
+      : `<div class="y"><span>carried in</span></div>` + (mem.lessons || []).slice(0, 5).map(l => `<div class="memo">• ${l.rule} <span style="opacity:.6">(${l.confidence})</span></div>`).join("");
+    feed.appendChild(b);
+  }
+  for (const y of ep.history) {
+    const s0 = y.state_before, b = document.createElement("div"); b.className = "bubble"; b.dataset.year = y.year;
+    const heard = (y.loop_results || []).map(lr => lr.action === "read_last_report" ? "read last year's report" : lr.action === "hold_referendum" ? `referendum on ${lr.args?.proposal}: ${lr.result?.approval_pct}% approve` : `${lr.action.replace("consult_", "")}: “${(lr.result?.advice || "").slice(0, 70)}”`);
+    const did = y.actions.length ? y.actions.map(a => `${a.name.replace(/_/g, " ")}${Object.values(a.args).length ? " " + Object.values(a.args).map(v => typeof v === "number" ? Math.round(v * 100) / 100 : v).join(",") : ""}`).join(" · ") : "did nothing";
+    b.innerHTML = `<div class="y"><span>year ${y.year}</span><span>pop ${s0.population} · $${s0.treasury} · 😊${s0.happiness}</span></div>
+      <div class="saw">saw <b>${s0.jobs}</b> jobs, <b>${Math.round((s0.unemployment || 0) * 100)}%</b> jobless, pollution <b>${s0.pollution}</b>, debt <b>${s0.debt}</b></div>
+      ${heard.length ? `<div class="heard">heard: ${heard.join("; ")}</div>` : ""}
+      <div class="did">→ ${did}</div>
+      ${y.reasoning ? `<div class="why">“${y.reasoning}”</div>` : ""}`;
+    feed.appendChild(b);
+  }
+  feedBuilt = ep;
+}
+function updateFeed() {
+  if (feedBuilt !== ep) buildFeed();
+  const feed = $("feed"); let target = null;
+  for (const b of feed.querySelectorAll(".bubble[data-year]")) { const y = +b.dataset.year; b.classList.toggle("now", y === year); b.style.display = y <= Math.max(year, 1) ? "" : "none"; if (y === year) target = b; }
+  if (target) target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
 // ---------- side panel (same as iso.js) ----------
 function render() {
   $("year").textContent = `year ${year} / 20`; $("scrub").value = year;
   if (!ep) return;
+  updateFeed();
   const s = stateAt(ep, year), rec = year > 0 ? ep.history[Math.min(year, ep.history.length) - 1] : null;
   $("mayorName").textContent = (NAMES[ep.mayor] || ep.mayor) + (ep.inherited ? " · inherited city" : "");
   $("score").textContent = `score ${ep.scoreboard?.total ?? "–"}`;
