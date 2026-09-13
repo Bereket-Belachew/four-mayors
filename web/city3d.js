@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789274520";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789274520";
-import { initHero, setHero } from "./hero.js?v=1789274520";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789274797";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789274797";
+import { initHero, setHero } from "./hero.js?v=1789274797";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -33,8 +33,8 @@ function select(keepMayor) {
   view = episodes.filter(e => e.seed === seed && e.term === term).sort((a, b) => ORDER.indexOf(a.mayor) - ORDER.indexOf(b.mayor));
   ep = (keepMayor && view.find(e => e.mayor === keepMayor)) || view[0] || null;
   $("tabs").innerHTML = view.map(e => `<div class="tab ${e === ep ? "sel" : ""}" data-m="${e.mayor}">${NAMES[e.mayor] || e.mayor}<span class="sc">${e.scoreboard?.total ?? ""}</span></div>`).join("");
-  $("tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => { ep = view.find(e => e.mayor === t.dataset.m); $("tabs").querySelectorAll(".tab").forEach(x => x.classList.toggle("sel", x.dataset.m === t.dataset.m)); recaps = ep ? planRecaps(ep) : []; year = 0; rebuild(true); render(); });
-  year = 0; $("scrub").max = Math.max(...view.map(e => e.years), 1);
+  $("tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => { ep = view.find(e => e.mayor === t.dataset.m); $("tabs").querySelectorAll(".tab").forEach(x => x.classList.toggle("sel", x.dataset.m === t.dataset.m)); recaps = ep ? planRecaps(ep) : []; year = 0; $("scrub").max = ep ? ep.years : 1; rebuild(true); render(); });
+  year = 0; $("scrub").max = ep ? ep.years : 1;
   recaps = ep ? planRecaps(ep) : [];
   rebuild(true); render();
 }
@@ -462,7 +462,7 @@ let ticking = false;
 async function tick() {
   if (ticking) return; ticking = true;
   try {
-    const maxY = +$("scrub").max; if (year >= maxY) { stop(); return; }
+    const maxY = ep ? ep.years : +$("scrub").max; if (year >= maxY) { stop(); return; }
     year++; await rebuild(false); render();
     const rc = recaps.find(r => r.year === year);
     const autopause = !document.getElementById("ch-autopause") || document.getElementById("ch-autopause").checked;
