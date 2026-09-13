@@ -9,7 +9,7 @@ const FIGURE = { caesar: "character-a", bureaucrat: "character-h", reformer: "ch
 const TITLES = { caesar: "Caesar · the Decider", bureaucrat: "The Bureaucrat · the Consulter", reformer: "The Reformer · the Learner", populist: "The Populist · the Beloved", reformer_shuffled: "The Reformer · shuffled control" };
 const EPITHET = { caesar: "Decides alone and fast. Consults no one. Carries nothing between terms.", bureaucrat: "Consults everyone, every year. Keeps every record. Checks none against outcomes.", reformer: "Writes falsifiable lessons. Reviews them next term. Drops the ones that fail.", populist: "The Reformer's method, judged by applause. Lessons live or die by approval.", reformer_shuffled: "The Reformer's memory with the rules shuffled: a token-matched control." };
 
-let renderer, scene, camera, mixer, figure, clock, host, dragging = false, lastX = 0, spin = 0, autoSpin = true, loaded = new Map();
+let renderer, scene, camera, mixer, figure, clock, host, dragging = false, lastX = 0, spin = 0, autoSpin = true, loaded = new Map(), visible = true, acc = 0;
 const loader = new GLTFLoader();
 
 export function initHero(container) {
@@ -31,7 +31,8 @@ export function initHero(container) {
   `;
   document.head.appendChild(st);
   const canvas = host.querySelector("canvas");
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(canvas);
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50); camera.position.set(0, 1.5, 4.9); camera.lookAt(0, 1.0, 0);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
@@ -97,8 +98,12 @@ function traits(ep) {
 
 function animate() {
   const dt = clock.getDelta();
-  if (mixer) mixer.update(dt);
-  if (figure) { if (autoSpin) spin += dt * 0.5; figure.rotation.y = spin; }
-  renderer.render(scene, camera);
+  acc += dt;
+  if (visible && !document.hidden && acc >= 1 / 30) {
+    if (mixer) mixer.update(acc);
+    if (figure) { if (autoSpin) spin += acc * 0.5; figure.rotation.y = spin; }
+    renderer.render(scene, camera);
+    acc = 0;
+  }
   requestAnimationFrame(animate);
 }

@@ -116,7 +116,7 @@ async function place(url, x, z, { fit = 0.9, rotY = 0, minH = 0, maxH = Infinity
 // ---------- scene ----------
 const game = $("game");
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 game.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
@@ -124,12 +124,12 @@ scene.background = new THREE.Color(0x87b6d9);
 scene.fog = new THREE.Fog(0x87b6d9, 30, 90);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const orbit = new OrbitControls(camera, renderer.domElement);
-orbit.enableDamping = true; orbit.maxPolarAngle = Math.PI / 2 - 0.05; orbit.minDistance = 3; orbit.maxDistance = 60;
+orbit.enableDamping = true; orbit.dampingFactor = 0.12; orbit.maxPolarAngle = Math.PI / 2 - 0.05; orbit.minDistance = 3; orbit.maxDistance = 60;
 const CENTER = new THREE.Vector3(N / 2 - 0.5, 0, N / 2 - 0.5);
 camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x556677, 0.9); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff3e0, 1.6); sun.position.set(20, 30, 10); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -14; sun.shadow.camera.right = 14; sun.shadow.camera.top = 14; sun.shadow.camera.bottom = -14; sun.shadow.camera.far = 80; scene.add(sun);
+sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -14; sun.shadow.camera.right = 14; sun.shadow.camera.top = 14; sun.shadow.camera.bottom = -14; sun.shadow.camera.far = 80; scene.add(sun);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(N + 6, N + 6), new THREE.MeshStandardMaterial({ color: 0x6e8a4a }));
 ground.rotation.x = -Math.PI / 2; ground.position.set(CENTER.x, -0.02, CENTER.z); ground.receiveShadow = true; scene.add(ground);
 const grassMat = new THREE.MeshStandardMaterial({ color: 0x7fa650 }), dirtMat = new THREE.MeshStandardMaterial({ color: 0xa08a63 }), lotMat = new THREE.MeshStandardMaterial({ color: 0x9a9a92 });
@@ -320,6 +320,7 @@ renderer.domElement.addEventListener("pointerleave", () => hideTalkSoon());
 
 // ---------- animate ----------
 const clock = new THREE.Clock();
+let frameNo = 0, fpsAcc = 0, fpsN = 0;
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (cinema) cinema.update(dt);
@@ -336,7 +337,9 @@ function animate() {
   for (const p of smokeGroup.children) { p.userData.t += dt * 0.35; if (p.userData.t > 1) p.userData.t = 0; const t = p.userData.t; p.position.set(p.userData.x + t * 0.35, 1.35 + t * 0.9, p.userData.z + t * 0.1); p.scale.setScalar(0.12 + t * 0.35); p.material.opacity = 0.5 * (1 - t); }
   for (const o of cityGroup.children) if (o.userData.fade !== undefined) { o.userData.fade -= dt * 0.6; o.material.opacity = Math.max(0, o.userData.fade); if (o.userData.fade <= 0) { cityGroup.remove(o); } }
   renderer.render(scene, camera);
-  renderCallouts();
+  frameNo++;
+  if (frameNo % 2 === 0) renderCallouts();
+  fpsAcc += dt; fpsN++; if (fpsAcc >= 1) { const el = $("fps"); if (el) el.textContent = `${Math.round(fpsN / fpsAcc)} fps`; fpsAcc = 0; fpsN = 0; }
   requestAnimationFrame(animate);
 }
 animate();
