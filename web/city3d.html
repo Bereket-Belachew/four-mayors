@@ -4,33 +4,28 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Four Mayors · 3D</title>
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --ink:#e8e8ea; --muted:#9aa0aa; --line:#2a2f3a; --good:#4ade80; --bad:#f87171; --warn:#fbbf24; }
+  :root { --panel: var(--surface); --line: var(--hair); }
   * { box-sizing:border-box; }
   html, body { height:100%; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; display:grid; grid-template-rows:auto 1fr; grid-template-columns:300px 1fr 340px; height:100vh; overflow:hidden; }
+  body { margin:0; display:grid; grid-template-rows:auto 1fr; grid-template-columns:300px 1fr 340px; height:100vh; overflow:hidden; }
   header { grid-column:1 / -1; display:flex; gap:12px; align-items:center; padding:8px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   header h1 { font-size:16px; margin:0 8px 0 0; font-weight:600; }
-  select, button, input[type=range] { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
-  button { cursor:pointer; } button.primary { background:#2563eb; border-color:#2563eb; } button.sel { border-color:#2563eb; background:#1b2436; }
   .tabs { display:flex; gap:6px; }
-  .tab { padding:5px 10px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--muted); font-size:13px; }
-  .tab.sel { color:var(--ink); border-color:#2563eb; background:#1b2436; }
-  .tab .sc { color:var(--warn); margin-left:6px; font-variant-numeric:tabular-nums; }
   #year { font-variant-numeric:tabular-nums; min-width:100px; color:var(--muted); }
-  #game { position:relative; overflow:hidden; background:#0b0d12; }
+  #game { position:relative; overflow:hidden; }
   #game canvas { display:block; }
-  #hint { position:absolute; left:12px; bottom:10px; color:var(--muted); font-size:12px; background:rgba(15,17,21,.7); padding:4px 8px; border-radius:6px; pointer-events:none; }
-  #talk { position:absolute; display:none; transform:translate(-50%,-100%); background:#111318; border:1px solid #2563eb; color:var(--ink); border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; text-align:center; z-index:5; }
+  #hint { position:absolute; left:12px; bottom:10px; font-size:12px; padding:4px 10px; border-radius:999px; pointer-events:none; }
+  #talk { position:absolute; display:none; transform:translate(-50%,-100%); font-size:13px; cursor:pointer; text-align:center; z-index:5; }
   #talk small { display:block; color:var(--muted); font-size:11px; }
   #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); background:rgba(11,13,18,.85); z-index:6; }
   #chamber { border-right:1px solid var(--line); background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }
   #chamber .portrait { display:flex; gap:10px; align-items:center; padding:12px 12px 8px; border-bottom:1px solid var(--line); }
-  #chamber .portrait img { width:56px; height:56px; object-fit:contain; background:#0b0d12; border-radius:10px; border:1px solid var(--line); }
+  #chamber .portrait img { width:56px; height:56px; object-fit:contain; border-radius:12px; }
   #chamber .n { font-weight:600; font-size:15px; } #chamber .p { font-size:11px; color:var(--muted); line-height:1.35; }
   #chamber .feed { overflow:auto; padding:10px 12px; display:flex; flex-direction:column; gap:10px; }
-  .bubble { background:#0f1115; border:1px solid var(--line); border-radius:12px; padding:8px 10px; font-size:12px; line-height:1.4; opacity:.55; }
-  .bubble.now { opacity:1; border-color:#2563eb; box-shadow:0 0 0 1px #2563eb inset; }
+  .bubble { border-radius:12px; padding:9px 11px; font-size:12.5px; line-height:1.45; opacity:.7; }
   .bubble .y { color:var(--muted); font-size:11px; display:flex; justify-content:space-between; }
   .bubble .saw { color:var(--muted); margin:4px 0 2px; } .bubble .saw b { color:var(--ink); font-weight:500; }
   .bubble .heard { color:#c4b5fd; margin:2px 0; font-style:italic; }
@@ -41,7 +36,7 @@
   body.no-chamber #chamber .portrait > div, body.no-chamber #chamber .feed, body.no-chamber #chamber #mayorImg { display:none; }
   body.no-chamber #chamber .portrait { padding:10px 6px; justify-content:center; }
   body.no-chamber #chMin::before { content:"🗣"; } body.no-chamber #chMin { font-size:16px; }
-  #chMin { margin-left:auto; align-self:flex-start; background:var(--panel); color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 8px; cursor:pointer; }
+  #chMin { margin-left:auto; align-self:flex-start; padding:2px 10px; }
   body.no-panel { grid-template-columns:300px 1fr; } body.no-panel aside { display:none; }
   body.no-chamber.no-panel { grid-template-columns:44px 1fr; }
   @media (max-width: 1300px) { body { grid-template-columns:260px 1fr 300px; } }
@@ -50,11 +45,11 @@
   aside .decision { max-height:110px; overflow:auto; }
   aside h2 { margin:0; font-size:13px; display:flex; justify-content:space-between; align-items:baseline; color:#9aa0aa; }
   aside h2 .score { color:var(--warn); font-variant-numeric:tabular-nums; }
-  .decision { font-size:12px; background:#1f2937; border-radius:6px; padding:6px 8px; min-height:34px; }
+  .decision { min-height:34px; }
   .health { display:grid; gap:4px; font-size:11px; color:var(--muted); }
   .hb { display:grid; grid-template-columns:70px 1fr 34px; align-items:center; gap:6px; }
   .hb.total { color:var(--ink); }
-  .ht { height:8px; background:#0b0d12; border-radius:4px; overflow:hidden; }
+  .ht { overflow:hidden; }
   .hf { display:block; height:100%; transition:width .6s ease; }
   .hv { text-align:right; font-variant-numeric:tabular-nums; }
   .stats { display:grid; grid-template-columns:1fr 1fr; gap:3px 8px; font-size:12px; color:var(--muted); }
@@ -92,7 +87,7 @@
 <div id="game">
   <div id="loading">loading the city…</div>
   <div id="talk">💬 talk<small id="talkLabel"></small></div>
-  <div id="fps" style="position:absolute;right:12px;bottom:10px;color:var(--muted);font-size:11px;background:rgba(15,17,21,.6);padding:2px 6px;border-radius:5px;pointer-events:none">– fps</div>
+  <div id="fps" style="position:absolute;right:12px;bottom:10px;font-size:11px;padding:2px 8px;border-radius:999px;pointer-events:none">– fps</div>
   <div id="hint">drag to orbit · wheel to zoom · hover a building to talk · street view: WASD to walk, drag to look</div>
 </div>
 <aside>
@@ -108,9 +103,9 @@
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
-<script type="module" src="city3d.js?v=1789275979"></script>
-<script src="narrator.js?v=1789275979"></script>
-<script src="tech.js?v=1789275979"></script>
-<script src="runpanel.js?v=1789275979"></script>
+<script type="module" src="city3d.js?v=1789276410"></script>
+<script src="narrator.js?v=1789276410"></script>
+<script src="tech.js?v=1789276410"></script>
+<script src="runpanel.js?v=1789276410"></script>
 </body>
 </html>
