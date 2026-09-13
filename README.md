@@ -12,6 +12,8 @@
 
 Built solo at CoreWeave Hacks, San Francisco, 2026-09-12/13.
 
+**Read the paper:** [web/paper.html](web/paper.html) — *What crosses the term boundary*: the world, the four loops, the results, the three graders, the traces, and what we would not claim. Every figure is computed from the run file by `scripts/paper.py`. Open it from the city page (`python3 -m http.server 8765` → `/web/paper.html`).
+
 > GIF and Weave links land here Sunday morning.
 
 ## The experiment
