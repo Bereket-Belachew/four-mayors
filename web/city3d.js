@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789276843";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789276843";
-import { initHero, setHero } from "./hero.js?v=1789276843";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789278985";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789278985";
+import { initHero, setHero } from "./hero.js?v=1789278985";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -414,7 +414,7 @@ animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
 initCallouts({ renderer, scene, camera, game, N, loadModelFull: loadModel, place, MODELS });
 initHero(document.querySelector("aside"));
-window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.__dbg = () => ({ ticking, playing, year, orbit: orbit.enabled, transitions: (window.lastTransitions || []).length }); window.showCallout = showCallout;
+window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep; window.allEpisodes = () => episodes; window.currentYear = () => year; window.__dbg = () => ({ ticking, playing, year, orbit: orbit.enabled, transitions: (window.lastTransitions || []).length }); window.showCallout = showCallout;
 window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = name; const keep = ep && ep.mayor; parse(await r.text()); if (keep) select(keep); } } catch (e) {} };
 
 // ---------- council chamber (left): what the mayor saw, heard, decided, and why ----------

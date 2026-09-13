@@ -3,6 +3,7 @@
 (function () {
   const API = "http://localhost:8766";
   const header = document.querySelector("header"); if (!header) return;
+  const hw = document.createElement("button"); hw.textContent = "⚙ how it works"; hw.onclick = () => window.openExplain && window.openExplain("loop"); header.appendChild(hw);
   const btn = document.createElement("button"); btn.id = "runBtn"; btn.textContent = "▶ new run"; btn.className = "primary"; header.appendChild(btn);
   const sel = document.createElement("select"); sel.id = "runFile"; sel.title = "which run file to show"; header.appendChild(sel);
   const panel = document.createElement("div"); panel.id = "runpanel"; panel.hidden = true;
