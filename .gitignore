@@ -5,6 +5,7 @@ __pycache__/
 runs/*.json
 !runs/audio/
 runs/*.jsonl
+!runs/demo-*.jsonl
 runs/controls/*
 !runs/.gitkeep
 !runs/controls/.gitkeep

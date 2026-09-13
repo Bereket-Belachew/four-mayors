@@ -24,6 +24,13 @@ Everything below exists to make this line true. -->
 - [x] Claude judge bug: Sonnet 5 spends the budget thinking, JSON was truncated → zeros. max_tokens 3000 + salvage parser.
 - [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
+## Sun 2026-09-13 10:15–11:05 — the world grounded in the literature (his go: "implement the learnings")
+- Rules changed (all mayors alike; WORLD-RULES §10): only filled jobs pay tax · start 540 jobs (10% idle) · unfilled jobs shrink · Bartik tax slope replaces the 30% cliff · tax hurts mood × (1 − services/100) · smog exodus above baseline 20 · homes wear 1%/yr · one seeded recession a term (−10% jobs, year 5–15) · housing score band 1.03–1.10, no free +2 · resilience = 7 − 0.5/yr in dip + 1.5/recovery on jobs & happiness · wage 5.5. Parks kept at 12% (labelled). Debt-mood weight NOT raised (evidence weak).
+- Baselines (seed 0): nothing 32.5 · modest active mayor 41.5 · housing trap 18.4 · borrowed factory town 23.2 · 40% tax 30.3 · best of 400 random scripts 43.2. 21 tests.
+- New demo file `runs/demo-science.jsonl` (24 terms, hard starts, 3 terms, both judges). Means formula/Claude/TypeSafe: Caesar 29.8/22.8/27.8 (4 bankruptcies) · Bureaucrat 33.4/30.8/33.1 · Reformer 35.7/34.5/36.7 (only mayor with 6 full terms; lessons 5 held / 4 failed) · Populist 31.3/21.3/28.8 (bankrupt in all 6 terms). All three graders rank Reformer first; both LLM judges rank Caesar and Populist last.
+- Fixed on the way: Luna output ceiling killed a run (max_tokens 1200 → 4000 + retry). Run files were gitignored, so no demo file had ever reached GitHub: `!runs/demo-*.jsonl` now whitelisted.
+- Open: inherited bankruptcy — a term that starts below −3000 dies in year 2 (Caesar t3 ×2, Populist t2/t3 ×4). One-param fix (reset the broke streak or a grace period at term start) if he wants terms 2–3 to mean something for the borrowers.
+
 ## Later: the science article
 - Later, when the world is a good scientific representation: a professional 'The science behind our world' article, written like an Aeon essay (human, well-written, no jargon), with the research sources as an appendix. Draft material: docs/research/world-models.md. (his ask, Sun 2026-09-13 morning)
 
