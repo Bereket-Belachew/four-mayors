@@ -184,7 +184,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
 export class Cinema {
-  constructor(ctx) { this.ctx = ctx; this.mixers = []; this.actors = []; this.props = []; this.playing = false; this.skipReq = false; this.loaderCache = new Map(); }
+  constructor(ctx) {
+    this.ctx = ctx; this.mixers = []; this.actors = []; this.props = []; this.playing = false; this.skipReq = false;
+    // warm the caches so the first recap of a demo is as smooth as the second
+    setTimeout(() => { for (const u of CHARS) ctx.loadModelFull(u).catch(() => {}); for (const u of [ctx.MODELS.barrier, ctx.MODELS.car[5], ctx.MODELS.car[6]]) ctx.loadModelFull(u).catch(() => {}); }, 1500);
+  }
   update(dt) {
     for (const m of this.mixers) m.update(dt);
     for (const a of this.actors) if (a.userData.path) { const p = a.userData.path; p.t = Math.min(1, p.t + dt / p.dur); const q = easeInOut(p.t); a.position.lerpVectors(p.from, p.to, q); if (p.t >= 1 && !p.arrived) { p.arrived = true; if (a.userData.onArrive) a.userData.onArrive(a); } }
