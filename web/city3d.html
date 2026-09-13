@@ -37,6 +37,10 @@
   .bubble .did { color:var(--warn); margin:4px 0 2px; font-weight:500; }
   .bubble .why { color:var(--ink); }
   .bubble .memo { color:#93c5fd; margin-top:4px; font-size:11px; }
+  body.no-chamber { grid-template-columns:0 1fr 340px; } body.no-chamber #chamber { display:none; }
+  body.no-panel { grid-template-columns:300px 1fr 0; } body.no-panel aside { display:none; }
+  body.no-chamber.no-panel { grid-template-columns:0 1fr 0; }
+  @media (max-width: 1300px) { body { grid-template-columns:260px 1fr 300px; } }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
   aside h2 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
   aside h2 .score { color:var(--warn); font-variant-numeric:tabular-nums; }
@@ -70,6 +74,8 @@
   <label style="color:var(--muted)">speed <input id="speed" type="range" min="1" max="10" value="4" /></label>
   <input id="scrub" type="range" min="0" max="20" value="0" style="flex:1;min-width:140px" />
   <span id="year">year 0 / 20</span>
+  <button id="togChamber" title="show/hide the council chamber">🗣</button>
+  <button id="togPanel" title="show/hide the numbers">📊</button>
   <a href="iso.html" style="color:var(--muted);font-size:12px">isometric</a>
   <a href="index.html" style="color:var(--muted);font-size:12px">four-up</a>
 </header>

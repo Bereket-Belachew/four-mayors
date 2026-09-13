@@ -282,6 +282,9 @@ function setMode(m) {
   else { camera.position.set(CENTER.x + 9, 7.5, CENTER.z + 9); orbit.target.copy(CENTER); }
 }
 $("camOrbit").onclick = () => setMode("orbit"); $("camStreet").onclick = () => setMode("street");
+$("togChamber").onclick = () => { document.body.classList.toggle("no-chamber"); setTimeout(resize, 50); };
+$("togPanel").onclick = () => { document.body.classList.toggle("no-panel"); setTimeout(resize, 50); };
+if (innerWidth < 1100) document.body.classList.add("no-chamber");
 
 // ---------- hover -> talk button ----------
 const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2(); let hovered = null;
