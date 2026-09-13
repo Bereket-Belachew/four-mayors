@@ -2,9 +2,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789325156";
-import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789325156";
-import { initHero, setHero } from "./hero.js?v=1789325156";
+import { Cinema, planRecaps, openingRecap } from "./cinema.js?v=1789326546";
+import { initCallouts, planCallouts, showCallout, renderCallouts, clearCallouts, updateStage, setAudio, audioEnabled, playSfx } from "./callouts.js?v=1789326546";
+import { initHero, setHero } from "./hero.js?v=1789326546";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -18,7 +18,7 @@ function dedupe(eps) {
 async function loadDefault() {
   let file = new URLSearchParams(location.search).get("runs");
   if (!file) { try { const j = await (await fetch("http://localhost:8766/runs")).json(); const first = j.runs.find(r => r.file !== "runs.jsonl" && r.episodes > 0) || j.runs[0]; file = first && first.file; } catch (e) {} }
-  file = file || "runs.jsonl";
+  file = file || "demo-science.jsonl";
   try { const r = await fetch(`../runs/${file}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = file; parse(await r.text()); const rf = document.getElementById('runFile'); if (rf && [...rf.options].some(o => o.value === file)) rf.value = file; } } catch (e) {}
 }
 function parse(text) {

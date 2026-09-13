@@ -14,7 +14,7 @@ function dedupe(eps) {
 async function loadDefault() {
   let file = new URLSearchParams(location.search).get("runs");
   if (!file) { try { const j = await (await fetch("http://localhost:8766/runs")).json(); const first = j.runs.find(r => r.file !== "runs.jsonl" && r.episodes > 0) || j.runs[0]; file = first && first.file; } catch (e) {} }
-  file = file || "runs.jsonl";
+  file = file || "demo-science.jsonl";
   try { const r = await fetch(`../runs/${file}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = file; parse(await r.text()); const rf = document.getElementById('runFile'); if (rf && [...rf.options].some(o => o.value === file)) rf.value = file; } } catch (e) {}
 }
 function parse(text) {
