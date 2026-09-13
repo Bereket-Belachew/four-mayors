@@ -110,6 +110,8 @@ function tilesFor(s) {
   const perm = lots.map((i, k) => [((k * 37) % lots.length), i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
   const kinds = new Array(N*N).fill("empty");
   spots.forEach((p, i) => { if (!p) kinds[i] = "road"; });
+  const HALL = 5 * N + 5; kinds[HALL] = "hall"; // city hall always stands at the centre lot
+  const perm0 = perm.filter(i => i !== HALL); perm.length = 0; perm.push(...perm0);
   let k = 0;
   for (let i = 0; i < houses && k < perm.length; i++, k++) kinds[perm[k]] = occ > 0.9 ? (tier >= 2 ? "tower" : "house") : (occ > 0.6 ? "house" : "shack");
   for (let i = 0; i < factories && k < perm.length; i++, k++) kinds[perm[k]] = "factory";
@@ -119,7 +121,7 @@ function tilesFor(s) {
   if (tier <= 1) for (let i = 0; i < N*N; i += 7) if (kinds[i] === "house" || kinds[i] === "shack") kinds[i] = "shuttered";
   return { kinds, N, tier, pollution: s.pollution };
 }
-const GLYPH = { empty: "", shack: "🛖", house: "🏠", tower: "🏢", factory: "🏭", park: "🌳", civic: "🏛️", shuttered: "🏚️", road: "" };
+const GLYPH = { empty: "", shack: "🛖", house: "🏠", tower: "🏢", factory: "🏭", park: "🌳", civic: "🏛️", hall: "🏰", shuttered: "🏚️", road: "" };
 function drawCity(cv, s, prevKinds, changedTiles) {
   const ctx = cv.getContext("2d");
   const W = cv.width = cv.clientWidth * 2, H = cv.height = W;

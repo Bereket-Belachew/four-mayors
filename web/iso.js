@@ -43,6 +43,8 @@ function tilesFor(s) {
   const perm = lots.map((i, k) => [((k * 37) % lots.length), i]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const kinds = new Array(N * N).fill("empty");
   spots.forEach((p, i) => { if (!p) kinds[i] = "road"; });
+  const HALL = 5 * N + 5; kinds[HALL] = "hall"; // city hall always stands at the centre lot
+  const perm0 = perm.filter(i => i !== HALL); perm.length = 0; perm.push(...perm0);
   let k = 0;
   for (let i = 0; i < houses && k < perm.length; i++, k++) kinds[perm[k]] = occ > 0.9 ? (tier >= 2 ? "tower" : "house") : (occ > 0.6 ? "house" : "shack");
   for (let i = 0; i < factories && k < perm.length; i++, k++) kinds[perm[k]] = "factory";
@@ -165,12 +167,16 @@ class City extends Phaser.Scene {
       this.tweens.add({ targets: puff, y: y - 110, alpha: 0, scale: 1.8, duration: 2200 + (hash(i, 2) % 900), repeat: -1 });
     } else if (kind === "civic") {
       objs.push(this.addImg(pick(SPR.civic, i, salt), r, c, 0, 1, 1));
+    } else if (kind === "hall") {
+      objs.push(this.addImg(B(85), r, c, 0, 1, 1));
+      objs.push(this.addImg(B(53), r, c, -78, 1, 2));
+      objs.push(this.addImg(B(13), r, c, -120, 1, 3));
     }
     if (kind !== "road" && kind !== "empty" && kind !== "park") {
       // hover a building -> a small chat button appears above it; click the button -> freeze & ask
       const top = objs[0]; top.setInteractive({ useHandCursor: false });
       const { x, y } = this.toScreen(r, c);
-      const label = { house: "a family lives here", shack: "poor housing", shuttered: "shuttered", tower: "apartments", factory: "factory", civic: "city services" }[kind] || kind;
+      const label = { house: "a family lives here", shack: "poor housing", shuttered: "shuttered", tower: "apartments", factory: "factory", civic: "city services", hall: "city hall — the mayor" }[kind] || kind;
       top.on("pointerover", () => this.showChatButton(x, y - (kind === "tower" ? 150 : 90), label, (r + c) * 10 + 50));
       top.on("pointerout", () => this.hideChatButtonSoon());
     }

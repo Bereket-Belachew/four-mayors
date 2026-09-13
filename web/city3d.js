@@ -41,6 +41,8 @@ function tilesFor(s) {
   const perm = lots.map((i, k) => [((k * 37) % lots.length), i]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const kinds = new Array(N * N).fill("empty");
   spots.forEach((p, i) => { if (!p) kinds[i] = "road"; });
+  const HALL = 5 * N + 5; kinds[HALL] = "hall"; // city hall always stands at the centre lot
+  const perm0 = perm.filter(i => i !== HALL); perm.length = 0; perm.push(...perm0);
   let k = 0;
   for (let i = 0; i < houses && k < perm.length; i++, k++) kinds[perm[k]] = occ > 0.9 ? (tier >= 2 ? "tower" : "house") : (occ > 0.6 ? "house" : "shack");
   for (let i = 0; i < factories && k < perm.length; i++, k++) kinds[perm[k]] = "factory";
@@ -74,6 +76,7 @@ const MODELS = {
   road: { straight: KIT.road + "road-straight.glb", bend: KIT.road + "road-bend.glb", t: KIT.road + "road-intersection.glb", cross: KIT.road + "road-crossroad.glb", end: KIT.road + "road-end.glb" },
   light: KIT.road + "light-square.glb",
   barrier: KIT.road + "construction-barrier.glb",
+  hall: KIT.com + "building-skyscraper-a.glb",
 };
 const loader = new GLTFLoader();
 const cache = new Map();
@@ -170,6 +173,7 @@ async function rebuild(full = false) {
       else if (kind === "factory") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.factory, i, 7), x, z, { fit: 0.95, maxH: 1.8 })); const ch = await place(pick(MODELS.chimney, i, 2), x + 0.3, z - 0.3, { fit: 0.18, maxH: 1.4 }); obj.add(ch); label = "factory";
         const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0.6, depthWrite: false })); puff.position.set(x + 0.3, 1.5, z - 0.3); puff.scale.setScalar(0.15); puff.userData = { t: hash(i, 4) % 1000 / 1000, x: x + 0.3, z: z - 0.3 }; smokeGroup.add(puff); }
       else if (kind === "civic") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(pick(MODELS.civic, i, 7), x, z, { fit: 0.9, maxH: 1.8 })); label = "city services"; }
+      else if (kind === "hall") { obj = new THREE.Group(); obj.add(tile(lotMat)); obj.add(await place(MODELS.hall, x, z, { fit: 0.95, maxH: 2.2 })); label = "city hall — the mayor"; }
       if (token !== buildToken || !obj) return;
       obj.userData.lot = { r, c, kind, label };
       cityGroup.add(obj);

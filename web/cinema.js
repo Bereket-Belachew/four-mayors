@@ -194,7 +194,7 @@ export class Cinema {
   flyTo(pos, target, dur = 2.2) { this.dolly = { from: this.ctx.camera.position.clone(), to: pos.clone(), tFrom: this.ctx.orbit.target.clone(), tTo: target.clone(), t: 0, dur }; }
   focusLot(kind) {
     const lots = [...this.ctx.lotMeta.values()];
-    return lots.find(l => l.kind === kind) || lots.find(l => l.kind === "civic") || lots.find(l => l.kind === "house") || { x: this.ctx.N / 2, z: this.ctx.N / 2 };
+    return lots.find(l => l.kind === kind) || lots.find(l => l.kind === "hall") || lots.find(l => l.kind === "civic") || lots.find(l => l.kind === "house") || { x: 5, z: 5 };
   }
   async loadChar(url) {
     const { root, animations } = await this.ctx.loadModelFull(url);
@@ -252,7 +252,7 @@ export class Cinema {
 
   // ---- stages ----
   async stage_revolt(recap, ep, L, d) {
-    const hall = this.focusLot("civic"); const { N } = this.ctx;
+    const hall = this.focusLot("hall"); const { N } = this.ctx;
     this.flyTo(new THREE.Vector3(hall.x + 3.2, 1.6, hall.z + 3.6), new THREE.Vector3(hall.x, 0.6, hall.z), 2.4);
     this.spotlight(hall.x, hall.z, 0xff6b6b);
     await this.say(L, recap.lines[0]);
@@ -284,7 +284,7 @@ export class Cinema {
     for (let i = 1; i < recap.lines.length; i++) await this.say(L, recap.lines[i]);
   }
   async stage_bankruptcy(recap, ep, L, d) {
-    const hall = this.focusLot("civic"); const s = ep.history[recap.year - 1].state;
+    const hall = this.focusLot("hall"); const s = ep.history[recap.year - 1].state;
     this.flyTo(new THREE.Vector3(hall.x + 4, 3, hall.z + 4), new THREE.Vector3(hall.x, 0.5, hall.z), 2.4);
     await this.say(L, recap.lines[0]);
     this.counter(d, "CITY DEBT", Math.max(0, s.debt - 3000), s.debt);
@@ -295,7 +295,7 @@ export class Cinema {
     for (let i = 1; i < recap.lines.length; i++) await this.say(L, recap.lines[i]);
   }
   async stage_loan(recap, ep, L, d) {
-    const hall = this.focusLot("civic"); const s = ep.history[recap.year - 1].state;
+    const hall = this.focusLot("hall"); const s = ep.history[recap.year - 1].state;
     this.flyTo(new THREE.Vector3(hall.x + 2.4, 1.4, hall.z + 2.8), new THREE.Vector3(hall.x, 0.4, hall.z), 2.2);
     const truck = await this.ctx.place(this.ctx.MODELS.car[5], hall.x + 3.5, hall.z + 0.7, { fit: 0.3, rotY: -Math.PI / 2 });
     truck.userData.path = { from: truck.position.clone(), to: new THREE.Vector3(hall.x + 0.9, truck.position.y, hall.z + 0.7), t: 0, dur: 2.2 }; this.ctx.scene.add(truck); this.actors.push(truck);
@@ -327,7 +327,7 @@ export class Cinema {
     for (const l of recap.lines) await this.say(L, l);
   }
   async stage_lesson_failed(recap, ep, L, d) {
-    const hall = this.focusLot("civic");
+    const hall = this.focusLot("hall");
     this.flyTo(new THREE.Vector3(hall.x + 2.4, 2.2, hall.z + 3.2), new THREE.Vector3(hall.x, 1.0, hall.z), 2.4);
     this.spotlight(hall.x, hall.z, 0xffffff);
     const failed = recap.failed.slice(0, 2);
