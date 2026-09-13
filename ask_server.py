@@ -153,13 +153,12 @@ def start_run(spec: dict[str, Any]) -> str:
                     except Exception as e:
                         job["errors"].append(f"{m} seed {sd}: {e}")
                         continue
-                    with out_file.open("a") as fh, (RUNS_DIR / "runs.jsonl").open("a") as main:
+                    with out_file.open("a") as fh:
                         for ep in eps:
                             ep["scoreboard"] = score_trajectory(ep["history"], ep["ended"])
                             ep["scoreboard_by_year"] = [score_trajectory(ep["history"][:i], ep["ended"] if i == len(ep["history"]) else "running") for i in range(1, len(ep["history"]) + 1)]
                             ep["run_file"] = out_file.name
-                            line = json.dumps(ep) + "\n"
-                            fh.write(line); main.write(line)
+                            fh.write(json.dumps(ep) + "\n")
                             job["done"].append({"mayor": ep["mayor"], "seed": ep["seed"], "term": ep["term"], "score": ep["scoreboard"]["total"], "ended": ep["ended"]})
             job["state"] = "done"
         except Exception as e:

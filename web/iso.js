@@ -7,9 +7,18 @@ const ORDER = ["caesar", "bureaucrat", "reformer", "populist", "reformer_shuffle
 const NAMES = window.MAYOR_NAMES = { caesar: "Caesar", bureaucrat: "The Bureaucrat", reformer: "The Reformer", populist: "The Populist", reformer_shuffled: "Reformer (shuffled)" };
 const $ = id => document.getElementById(id);
 
-async function loadDefault() { try { const r = await fetch("../runs/runs.jsonl"); if (r.ok) parse(await r.text()); } catch (e) {} }
+function dedupe(eps) {
+  const m = new Map(); for (const e of eps) m.set(`${e.mayor}|${e.seed}|${e.term}`, e); // later lines win
+  return [...m.values()];
+}
+async function loadDefault() {
+  let file = new URLSearchParams(location.search).get("runs");
+  if (!file) { try { const j = await (await fetch("http://localhost:8766/runs")).json(); const first = j.runs.find(r => r.file !== "runs.jsonl" && r.episodes > 0) || j.runs[0]; file = first && first.file; } catch (e) {} }
+  file = file || "runs.jsonl";
+  try { const r = await fetch(`../runs/${file}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = file; parse(await r.text()); } } catch (e) {}
+}
 function parse(text) {
-  episodes = text.split("\n").filter(Boolean).map(l => JSON.parse(l));
+  episodes = dedupe(text.split("\n").filter(Boolean).map(l => JSON.parse(l)));
   fill("seed", [...new Set(episodes.map(e => e.seed))].sort((a, b) => a - b));
   fill("term", [...new Set(episodes.map(e => e.term))].sort((a, b) => a - b));
   select();
@@ -259,5 +268,5 @@ $("scrub").oninput = e => { stop(); year = +e.target.value; scene && scene.rebui
 $("seed").onchange = () => select(ep && ep.mayor);
 $("term").onchange = () => select(ep && ep.mayor);
 window.currentEp = () => ep;
-window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) parse(await r.text()); } catch (e) {} };
+window.loadRunsFile = async name => { try { const r = await fetch(`../runs/${name}?t=${Date.now()}`); if (r.ok) { window.currentRunFile = name; parse(await r.text()); } } catch (e) {} };
 loadDefault();

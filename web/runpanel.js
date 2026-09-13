@@ -36,8 +36,9 @@
   async function refreshFiles(selectName) {
     try {
       const r = await fetch(`${API}/runs`); const j = await r.json();
-      sel.innerHTML = j.runs.map(f => `<option value="${f.file}">${f.file.replace(/\.jsonl$/, "")} (${f.episodes})</option>`).join("");
-      if (selectName) sel.value = selectName;
+      const pretty = f => f.replace(/\.jsonl$/, "").replace(/^web-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})\d{2}-?/, "$4:$5 · ");
+      sel.innerHTML = j.runs.filter(f => f.episodes > 0).map(f => `<option value="${f.file}">${pretty(f.file)} (${f.episodes})</option>`).join("");
+      const want = selectName || window.currentRunFile; if (want) sel.value = want;
     } catch (e) { sel.innerHTML = `<option>runs.jsonl</option>`; sel.title = "ask_server.py is not running: python ask_server.py"; }
   }
   sel.onchange = () => { if (window.loadRunsFile) window.loadRunsFile(sel.value); };
@@ -80,5 +81,5 @@
       msg.textContent = `running ${mayors.length * seeds.length} mayor×city job(s), ${terms} term(s) each`;
     } catch (e) { msg.textContent = `could not start: ${e.message}. Is ask_server.py running?`; }
   };
-  refreshFiles("runs.jsonl");
+  setTimeout(() => refreshFiles(), 800);
 })();
