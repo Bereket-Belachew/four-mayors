@@ -10,6 +10,14 @@ Everything below exists to make this line true. -->
 
 **Thesis (one sentence for a judge):** Same city, same model, same seed. Four mayors that differ only in how they close the loop. Watch which city grows.
 
+## Evening build (2026-09-12 17:56–19:05, his plan, his order)
+- [x] Cinematic recaps (web/cinema.js): 3–4 staged moments per term, finale = the ending itself or a failed lesson; letterbox, grade, dolly, typed lines; animated Blocky Characters crowd; trucks; debt counter; lesson card cracks; term-end pull-back with lesson cards.
+- [x] Distress visuals: barriers/cones + debt billboard (broke), dumpsters (services), container shanties (jobless), standing protest at city hall (unhappy), brown trees/yellow grass (pollution), overcast light (failing), golden (thriving).
+- [x] Council chamber (left): mayor portrait, persona, lessons carried in, per-year saw/heard/decided/why.
+- [x] How-it-works overlay (web/tech.js): loop diagram, outside-the-loop graders, cabinet of agents, guards, live memory diff.
+- [x] Run from the web (web/runpanel.js + ask_server /run /status /runs): live per-year progress, past run files selectable.
+- [x] City hall reserved at the centre lot on all pages.
+
 ## TODO after the isometric page (logged 2026-09-12 16:35, his ask)
 - [ ] TypeSafe as a second judge (rubric criteria as `score` questions; compare with formula + Claude). ~30 min. Then maybe a System-One Caesar (classification mayor) as a provider benchmark.
 - [ ] Taxes scaled by service quality (tax penalty shrinks when services are good). 2 lines + WORLD-RULES sentence.
