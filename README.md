@@ -1,4 +1,8 @@
 # Four Mayors
+<img width="2078" height="1350" alt="image" src="https://github.com/user-attachments/assets/4558b712-5b63-4f92-a84b-7186232b3617" />
+<img width="2763" height="1399" alt="image" src="https://github.com/user-attachments/assets/9acd6a6f-8ffe-4f82-a4b9-0c5627f8f190" />
+
+
 
 **Same city, same model, same seed. Four mayors that differ only in how they close the loop. Watch which city grows.**
 
