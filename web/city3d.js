@@ -267,7 +267,7 @@ function animate() {
 }
 animate();
 cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
-window.cinema = cinema; window.recapsFor = () => recaps;
+window.cinema = cinema; window.recapsFor = () => recaps; window.currentEp = () => ep;
 
 // ---------- side panel (same as iso.js) ----------
 function render() {
