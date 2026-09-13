@@ -24,6 +24,14 @@ Everything below exists to make this line true. -->
 - [x] Claude judge bug: Sonnet 5 spends the budget thinking, JSON was truncated → zeros. max_tokens 3000 + salvage parser.
 - [ ] Fresh four-mayor sweep under the new rules running via the web runner (web-20260912-205446-debt-rules.jsonl) — compare Populist debt before/after for the demo.
 
+## Scoring holes found Sun 2026-09-13 morning — parked, not fixed (his call: research first)
+- Unemployment is 0.00 at the end of all 24 demo terms. Workforce = 60% of population; default city has 900 jobs for 600 workers; revenue taxes ALL jobs (phantom jobs pay). Employment pinned at 1 → prosperity 10, mood floor ~73, unbounded treasury (Bureaucrat 78k).
+- Housing: flat +2 and move-in self-corrects the ratio → doing nothing scores 10.
+- Debt penalty calibrated for 26k debt; credit limit caps debt ~3.6k → debt costs ≤ ~11 mood points. Debt>3000 years average happiness 70.5 vs 58.5 debt-free.
+- No layoffs lever; jobs only fall via demolish, tax>30%, services<20, over-credit churn.
+- Candidate fixes (all mayors equally): tax only min(jobs, workforce); workforce_share 0.6→~0.85; debt_unhappiness 10→~40, deficit 3→6; drop housing +2. Re-run demo + world.json + both judges after (~25 min).
+- Research brief out: published city/economy models vs ours, plain words → `docs/research/world-models.md`.
+
 ## Sunday morning (2026-09-13) — start here
 Submission 13:00 on the AGI House platform · judging 13:30 · awards 16:30. Everything below is in `runs/demo-debt-rules.jsonl` and the 3D page unless noted.
 1. Weave screenshots (year_decide, memory_write, review, both judge ops) into `docs/screens/`; README GIF + Weave links (README line 13 placeholder).
