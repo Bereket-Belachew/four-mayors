@@ -31,16 +31,22 @@ export function planRecaps(ep, cap = 4) {
     if (s.unemployment >= 0.2 && (p.unemployment || 0) < 0.2) cands.push({ year: y, type: "layoffs", priority: 45 });
     const refused = rec.ignored.find(i => /lots/.test(i.why)); if (refused) cands.push({ year: y, type: "landfull", priority: 28, refused });
   }
-  // the end of the term always gets one
-  const last = H.length;
+  // the end of the term always gets one: a failed lesson beats everything; an early ending is staged as itself
+  const last = H.length, endRec = H[last - 1];
   const failed = (ep.memory_diff?.checked || []).filter(v => v.verdict === "failed");
-  cands.push({ year: last, type: failed.length ? "lesson_failed" : "term_end", priority: 200, failed });
+  const endType = failed.length ? "lesson_failed" : (endRec.ended && endRec.ended !== "horizon") ? (endRec.ended === "revolt" ? "revolt" : endRec.ended === "bankruptcy" ? "bankruptcy" : "exodus") : "term_end";
+  const finale = { year: last, type: endType, priority: 200, failed, isEnd: true };
   // fixed beats at 5/10/15 if nothing else near them
-  for (const y of [5, 10, 15]) if (y < last && !cands.some(c => Math.abs(c.year - y) <= 2 && c.priority >= 30)) cands.push({ year: y, type: "quiet", priority: 10 });
-  // pick: end always, then best by priority with at least 3 years apart
-  cands.sort((a, b) => b.priority - a.priority);
-  const chosen = [];
-  for (const c of cands) { if (chosen.length >= cap) break; if (chosen.some(x => x !== c && Math.abs(x.year - c.year) < 3 && c.priority < 200)) continue; chosen.push(c); }
+  for (const y of [5, 10, 15]) if (y < last - 1 && !cands.some(c => Math.abs(c.year - y) <= 2 && c.priority >= 30)) cands.push({ year: y, type: "quiet", priority: 10 });
+  // pick: the finale, then best by priority; one recap per type; at least 3 years apart
+  const chosen = [finale];
+  const others = cands.filter(c => c.year < last - 1).sort((a, b) => b.priority - a.priority);
+  for (const c of others) {
+    if (chosen.length >= cap) break;
+    if (chosen.some(x => x.type === c.type)) continue;
+    if (chosen.some(x => Math.abs(x.year - c.year) < 3)) continue;
+    chosen.push(c);
+  }
   chosen.sort((a, b) => a.year - b.year);
   return chosen.map(c => ({ ...c, ...linesFor(ep, c) }));
 }
@@ -114,6 +120,12 @@ function linesFor(ep, c) {
       L.push(`Population ${s.population}, jobs ${s.jobs}, treasury ${s.treasury}, debt ${s.debt}.`);
       L.push(`Pollution ${s.pollution}, happiness ${s.happiness}, services ${s.services}.`);
       L.push(`${m} decided: ${acts}.`);
+  }
+  if (c.isEnd && c.type !== "term_end" && c.type !== "lesson_failed") {
+    L.push(`Term over after ${c.year} years. Score ${ep.scoreboard?.total ?? "?"} of 60.`);
+    if (ep.memory_before?.policy === "none") L.push(`${m} writes nothing down. The next term begins as if it were the first.`);
+    else if (ep.memory_before?.policy === "opinion_log") L.push(`${m} files the year's records. None are checked against what happened.`);
+    else { const a = ep.memory_diff?.added || []; if (a[0]) L.push(`New lesson: “${a[0]}”`); }
   }
   return { title, lines: L };
 }
