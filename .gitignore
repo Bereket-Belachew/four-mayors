@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 runs/*.json
+!runs/audio/
 runs/*.jsonl
 runs/controls/*
 !runs/.gitkeep
