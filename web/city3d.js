@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { Cinema, planRecaps } from "./cinema.js";
 
 // ---------- data / controls (mirrors iso.js) ----------
 let episodes = [], view = [], ep = null, year = 0, playing = false, timer = null;
@@ -21,8 +22,9 @@ function select(keepMayor) {
   view = episodes.filter(e => e.seed === seed && e.term === term).sort((a, b) => ORDER.indexOf(a.mayor) - ORDER.indexOf(b.mayor));
   ep = (keepMayor && view.find(e => e.mayor === keepMayor)) || view[0] || null;
   $("tabs").innerHTML = view.map(e => `<div class="tab ${e === ep ? "sel" : ""}" data-m="${e.mayor}">${NAMES[e.mayor] || e.mayor}<span class="sc">${e.scoreboard?.total ?? ""}</span></div>`).join("");
-  $("tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => { ep = view.find(e => e.mayor === t.dataset.m); $("tabs").querySelectorAll(".tab").forEach(x => x.classList.toggle("sel", x.dataset.m === t.dataset.m)); rebuild(true); render(); });
+  $("tabs").querySelectorAll(".tab").forEach(t => t.onclick = () => { ep = view.find(e => e.mayor === t.dataset.m); $("tabs").querySelectorAll(".tab").forEach(x => x.classList.toggle("sel", x.dataset.m === t.dataset.m)); recaps = ep ? planRecaps(ep) : []; year = 0; rebuild(true); render(); });
   year = 0; $("scrub").max = Math.max(...view.map(e => e.years), 1);
+  recaps = ep ? planRecaps(ep) : [];
   rebuild(true); render();
 }
 function stateAt(e, y) { if (y === 0) return e.history[0]?.state_before ?? e.final_state; return e.history[Math.min(y, e.history.length) - 1].state; }
@@ -71,6 +73,7 @@ const MODELS = {
   car: ["sedan", "suv", "taxi", "van", "hatchback-sports", "delivery", "truck", "sedan-sports"].map(x => KIT.car + x + ".glb"),
   road: { straight: KIT.road + "road-straight.glb", bend: KIT.road + "road-bend.glb", t: KIT.road + "road-intersection.glb", cross: KIT.road + "road-crossroad.glb", end: KIT.road + "road-end.glb" },
   light: KIT.road + "light-square.glb",
+  barrier: KIT.road + "construction-barrier.glb",
 };
 const loader = new GLTFLoader();
 const cache = new Map();
@@ -78,7 +81,7 @@ function loadModel(url) {
   if (!cache.has(url)) cache.set(url, new Promise((res, rej) => loader.load(url, g => {
     const root = g.scene; root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     const box = new THREE.Box3().setFromObject(root);
-    res({ root, box, size: box.getSize(new THREE.Vector3()) });
+    res({ root, box, size: box.getSize(new THREE.Vector3()), animations: g.animations || [] });
   }, undefined, rej)));
   return cache.get(url);
 }
@@ -139,6 +142,8 @@ function roadFor(kinds, r, c) {
 }
 
 let buildToken = 0, lotMeta = new Map(), prevKinds = null, currentTier = 3;
+let recaps = [];
+let cinema = null;
 async function rebuild(full = false) {
   if (!ep) return;
   const token = ++buildToken;
@@ -245,8 +250,9 @@ renderer.domElement.addEventListener("pointerleave", () => hideTalkSoon());
 const clock = new THREE.Clock();
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (mode === "orbit") orbit.update();
-  else {
+  if (cinema) cinema.update(dt);
+  if (mode === "orbit" && !(cinema && cinema.playing)) orbit.update();
+  else if (mode === "street") {
     const f = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), rgt = new THREE.Vector3(f.z, 0, -f.x); const sp = 3 * dt;
     if (keys["w"] || keys["arrowup"]) streetPos.addScaledVector(f, sp); if (keys["s"] || keys["arrowdown"]) streetPos.addScaledVector(f, -sp);
     if (keys["a"] || keys["arrowleft"]) streetPos.addScaledVector(rgt, sp); if (keys["d"] || keys["arrowright"]) streetPos.addScaledVector(rgt, -sp);
@@ -260,6 +266,8 @@ function animate() {
   requestAnimationFrame(animate);
 }
 animate();
+cinema = new Cinema({ game, scene, camera, orbit, renderer, cityGroup, smokeGroup, get lotMeta() { return lotMeta; }, place, MODELS, N, loadModelFull: loadModel });
+window.cinema = cinema; window.recapsFor = () => recaps;
 
 // ---------- side panel (same as iso.js) ----------
 function render() {
@@ -283,9 +291,19 @@ function render() {
 }
 
 // ---------- playback ----------
-function tick() { const maxY = +$("scrub").max; if (year >= maxY) { stop(); return; } year++; rebuild(false); render(); if (window.chroniclerCheck && window.chroniclerCheck([ep], year)) { const was = playing; stop(); window.__resumePlay = () => { if (was) play(); }; } }
+let ticking = false;
+async function tick() {
+  if (ticking) return; ticking = true;
+  try {
+    const maxY = +$("scrub").max; if (year >= maxY) { stop(); return; }
+    year++; await rebuild(false); render();
+    const rc = recaps.find(r => r.year === year);
+    const autopause = !document.getElementById("ch-autopause") || document.getElementById("ch-autopause").checked;
+    if (rc && autopause && cinema) { const was = playing; stop(); await cinema.play(rc, ep); if (was) play(); }
+  } finally { ticking = false; }
+}
 function play() { if (playing) return stop(); playing = true; $("play").textContent = "❚❚ pause"; schedule(); }
-function schedule() { timer = setTimeout(() => { tick(); if (playing) schedule(); }, 10000 / +$("speed").value); }
+function schedule() { timer = setTimeout(async () => { await tick(); if (playing) schedule(); }, 10000 / +$("speed").value); }
 function stop() { playing = false; clearTimeout(timer); $("play").textContent = "▶ play"; }
 window.stop3d = stop;
 $("play").onclick = play; $("step").onclick = () => { stop(); tick(); };
